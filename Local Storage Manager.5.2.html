@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Storage Manager</title>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .controls {
+            background: #f4f4f4;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button.clear {
+            background: #f44336;
+        }
+        button.qr {
+            background: #2196F3;
+        }
+        button.edit {
+            background: #ff9800;
+        }
+        button.sort {
+            background: #607d8b;
+        }
+        .storage-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .storage-item {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .storage-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .item-key {
+            font-weight: bold;
+            word-break: break-all;
+            flex-grow: 1;
+        }
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .item-value {
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-bottom: 10px;
+            max-height: 150px;
+            overflow: auto;
+        }
+        .char-count {
+            font-size: 0.8em;
+            color: #666;
+            text-align: right;
+            margin-top: 5px;
+        }
+        .empty {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            max-height: 70vh;
+            overflow: auto;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #qrCodeContainer {
+            margin: 10px auto;
+            text-align: center;
+        }
+        .edit-controls {
+            margin-top: 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        #valueModalTextarea {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            min-height: 300px;
+            resize: vertical;
+        }
+        #keyModalInput {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        @media (max-width: 768px) {
+            .storage-items {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                width: 90%;
+                margin: 10% auto;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Local Storage Manager</h1>
+    
+    <div class="controls">
+        <button id="refreshBtn">🔄 Refresh</button>
+        <button id="clearBtn" class="clear">🗑️ Clear All</button>
+        <button id="addBtn">➕ Add Item</button>
+        <button id="sortBtn" class="sort">🔃 Toggle Sort (A-Z/Z-A)</button>
+    </div>
+    
+    <div id="storageContainer">
+        <div id="storageItems" class="storage-items">
+            <!-- Items will be inserted here -->
+        </div>
+        <div id="emptyMessage" class="empty" style="display: none;">
+            localStorage is empty. Click "Add Item" to create one.
+        </div>
+    </div>
+    
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <h3 id="qrTitle">QR Code</h3>
+            <div id="qrCodeContainer"></div>
+            <p id="qrContent" style="word-break: break-all;"></p>
+            <div class="edit-controls">
+                <button id="closeQrBtn">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View/Edit Value Modal -->
+    <div id="valueModal" class="modal">
+        <div class="modal-content">
+            <h3 id="valueModalTitle">Edit Value</h3>
+            <textarea id="valueModalTextarea"></textarea>
+            <div class="edit-controls">
+                <button id="viewCancelBtn">Cancel</button>
+                <button id="saveValueBtn" class="edit">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Key Modal -->
+    <div id="keyModal" class="modal">
+        <div class="modal-content">
+            <h3 id="keyModalTitle">Edit Key</h3>
+            <input type="text" id="keyModalInput">
+            <div class="edit-controls">
+                <button id="keyCancelBtn">Cancel</button>
+                <button id="saveKeyBtn" class="edit">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentEditKey = null;
+        let sortDirection = 1;
+        const QR_CODE_CHAR_LIMIT = 200; // Hide QR button for values longer than this
+        
+        function displayLocalStorage() {
+            const storageItems = document.getElementById('storageItems');
+            const emptyMessage = document.getElementById('emptyMessage');
+            
+            storageItems.innerHTML = '';
+            
+            if (localStorage.length === 0) {
+                emptyMessage.style.display = 'block';
+            } else {
+                emptyMessage.style.display = 'none';
+                
+                const keys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    keys.push(localStorage.key(i));
+                }
+                
+                keys.sort((a, b) => a.localeCompare(b) * sortDirection);
+                
+                keys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    const valueLength = value ? value.length : 0;
+                    const showQrButton = valueLength <= QR_CODE_CHAR_LIMIT;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'storage-item';
+                    item.dataset.key = key;
+                    
+                    const header = document.createElement('div');
+                    header.className = 'storage-item-header';
+                    
+                    const keySpan = document.createElement('span');
+                    keySpan.className = 'item-key';
+                    keySpan.textContent = key;
+                    
+                    const actions = document.createElement('div');
+                    actions.className = 'item-actions';
+                    
+                    const editKeyBtn = document.createElement('button');
+                    editKeyBtn.textContent = '✏️';
+                    editKeyBtn.className = 'edit';
+                    editKeyBtn.title = 'Edit key';
+                    editKeyBtn.style.padding = '5px 8px';
+                    editKeyBtn.addEventListener('click', () => openKeyModal(key));
+                    
+                    // Only add QR button if value is short enough
+                    if (showQrButton) {
+                        const qrBtn = document.createElement('button');
+                        qrBtn.textContent = '🔳';
+                        qrBtn.className = 'qr';
+                        qrBtn.title = 'Generate QR Code';
+                        qrBtn.style.padding = '5px 8px';
+                        qrBtn.addEventListener('click', () => showQRCode(key, value));
+                        actions.appendChild(qrBtn);
+                    }
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '❌';
+                    deleteBtn.className = 'clear';
+                    deleteBtn.title = 'Delete this item';
+                    deleteBtn.style.padding = '5px 8px';
+                    deleteBtn.addEventListener('click', () => {
+                        if (confirm(`Delete item "${key}"?`)) {
+                            localStorage.removeItem(key);
+                            displayLocalStorage();
+                        }
+                    });
+                    
+                    actions.appendChild(editKeyBtn);
+                    actions.appendChild(deleteBtn);
+                    header.appendChild(keySpan);
+                    header.appendChild(actions);
+                    item.appendChild(header);
+                    
+                    const valueDiv = document.createElement('div');
+                    valueDiv.className = 'item-value';
+                    valueDiv.textContent = value;
+                    item.appendChild(valueDiv);
+                    
+                    const charCount = document.createElement('div');
+                    charCount.className = 'char-count';
+                    charCount.textContent = `${valueLength} characters`;
+                    item.appendChild(charCount);
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Edit Value';
+                    editBtn.className = 'edit';
+                    editBtn.style.width = '100%';
+                    editBtn.addEventListener('click', () => openValueModal(key, value));
+                    item.appendChild(editBtn);
+                    
+                    storageItems.appendChild(item);
+                });
+            }
+        }
+        
+        function toggleSortDirection() {
+            sortDirection = sortDirection === 1 ? -1 : 1;
+            displayLocalStorage();
+        }
+        
+        function openValueModal(key, value) {
+            currentEditKey = key;
+            const modal = document.getElementById('valueModal');
+            const textarea = document.getElementById('valueModalTextarea');
+            
+            document.getElementById('valueModalTitle').textContent = `Editing: ${key}`;
+            textarea.value = value;
+            modal.style.display = 'block';
+            textarea.focus();
+        }
+        
+        function openKeyModal(key) {
+            currentEditKey = key;
+            const modal = document.getElementById('keyModal');
+            const input = document.getElementById('keyModalInput');
+            
+            document.getElementById('keyModalTitle').textContent = `Edit Key: ${key}`;
+            input.value = key;
+            modal.style.display = 'block';
+            input.focus();
+            input.select();
+        }
+        
+        function updateKey(originalKey, newKey) {
+            newKey = newKey.trim();
+            
+            if (!newKey) {
+                alert("Key cannot be empty!");
+                return false;
+            }
+            
+            if (newKey === originalKey) {
+                return false;
+            }
+            
+            if (localStorage.getItem(newKey) !== null) {
+                alert("This key already exists!");
+                return false;
+            }
+            
+            const value = localStorage.getItem(originalKey);
+            localStorage.removeItem(originalKey);
+            localStorage.setItem(newKey, value);
+            return true;
+        }
+        
+        function showQRCode(key, value) {
+            const modal = document.getElementById('qrModal');
+            const qrContainer = document.getElementById('qrCodeContainer');
+            
+            qrContainer.innerHTML = '';
+            document.getElementById('qrTitle').textContent = `QR Code for: ${key}`;
+            document.getElementById('qrContent').textContent = value;
+            
+            new QRCode(qrContainer, {
+                text: value,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            modal.style.display = 'block';
+        }
+        
+        // Event Listeners
+        document.getElementById('addBtn').addEventListener('click', () => {
+            const key = prompt('Enter key for new item:');
+            if (key) {
+                if (localStorage.getItem(key) !== null) {
+                    alert('This key already exists!');
+                    return;
+                }
+                const value = prompt('Enter value for new item:');
+                localStorage.setItem(key, value || '');
+                displayLocalStorage();
+            }
+        });
+        
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear ALL localStorage data?')) {
+                localStorage.clear();
+                displayLocalStorage();
+            }
+        });
+        
+        document.getElementById('refreshBtn').addEventListener('click', displayLocalStorage);
+        document.getElementById('sortBtn').addEventListener('click', toggleSortDirection);
+        
+        document.getElementById('saveKeyBtn').addEventListener('click', () => {
+            if (currentEditKey) {
+                const newKey = document.getElementById('keyModalInput').value;
+                if (updateKey(currentEditKey, newKey)) {
+                    document.getElementById('keyModal').style.display = 'none';
+                    displayLocalStorage();
+                }
+            }
+        });
+        
+        document.getElementById('keyCancelBtn').addEventListener('click', () => {
+            document.getElementById('keyModal').style.display = 'none';
+        });
+        
+        document.getElementById('saveValueBtn').addEventListener('click', () => {
+            if (currentEditKey) {
+                const newValue = document.getElementById('valueModalTextarea').value;
+                localStorage.setItem(currentEditKey, newValue);
+                document.getElementById('valueModal').style.display = 'none';
+                displayLocalStorage();
+            }
+        });
+        
+        document.getElementById('viewCancelBtn').addEventListener('click', () => {
+            document.getElementById('valueModal').style.display = 'none';
+        });
+        
+        document.getElementById('closeQrBtn').addEventListener('click', () => {
+            document.getElementById('qrModal').style.display = 'none';
+        });
+        
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('keyModalInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('saveKeyBtn').click();
+            }
+        });
+        
+        displayLocalStorage();
+    </script>
+</body>
+</html>
