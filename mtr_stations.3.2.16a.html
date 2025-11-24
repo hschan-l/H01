@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTR Station Selector</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #e6f2ff;
+            --accent-color: #ff6b00;
+            --text-color: #333;
+            --light-gray: #f5f5f5;
+            --border-color: #ddd;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            
+            --route-map-color: #2E8B57;
+            --google-map-color: #4682FF;
+            --street-map-color: #4682B4;
+            --station-layout-color: #9370DB;
+            --exit-info-color: #D35400;
+            
+            /* Light mode specific variables */
+            --bg-color: #f9f9f9;
+            --card-bg: white;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --border-light: #ddd;
+            --scrollbar-track: #f1f1f1;
+            --scrollbar-thumb: #c1c1c1;
+            --placeholder-bg: #f8f9fa;
+            --direction-bg: rgba(240, 240, 240, 0.7);
+            --station-count-bg: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            --navigation-info-bg: rgba(248, 249, 250, 0.8);
+            --station-label-bg: rgba(255, 255, 255, 0.95);
+            --station-label-active-bg: rgba(255, 249, 242, 0.98);
+            --station-label-interchange-bg: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,240,240,0.95) 100%);
+            --station-label-interchange-active-bg: linear-gradient(135deg, rgba(255,249,242,0.98) 0%, rgba(255,235,215,0.98) 100%);
+        }
+        
+        /* Dark mode variables */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-light: #444;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3);
+            --scrollbar-track: #2a2a2a;
+            --scrollbar-thumb: #555;
+            --placeholder-bg: #2a2a2a;
+            --direction-bg: rgba(60, 60, 60, 0.7);
+            --station-count-bg: linear-gradient(135deg, #2a2a2a 0%, #333 100%);
+            --navigation-info-bg: rgba(60, 60, 60, 0.8);
+            --station-label-bg: rgba(40, 40, 40, 0.95);
+            --station-label-active-bg: rgba(60, 40, 20, 0.98);
+            --station-label-interchange-bg: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(50,50,50,0.95) 100%);
+            --station-label-interchange-active-bg: linear-gradient(135deg, rgba(60,40,20,0.98) 0%, rgba(80,50,30,0.98) 100%);
+            
+            /* Adjusting existing colors for dark mode */
+            --secondary-color: #1a3a5f;
+            --light-gray: #2a2a2a;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: var(--text-primary);
+            background-color: var(--bg-color);
+            padding: 8px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 8px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 8px 0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            transition: background-color 0.3s;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+        
+        .header p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .theme-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle:hover {
+            background-color: var(--light-gray);
+            color: var(--primary-color);
+        }
+        
+        .controls-panel {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: background-color 0.3s;
+        }
+        
+        .dropdowns {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .dropdown {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dropdown label {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--primary-color);
+            font-size: 12px;
+        }
+        
+        select {
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+        }
+        
+        .favorites-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .favorites-section h3 {
+            color: var(--primary-color);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .favorites-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .favorite-item {
+            background: var(--secondary-color);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            color: var(--text-primary);
+        }
+        
+        .favorite-item:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .favorite-item i {
+            font-size: 10px;
+        }
+        
+        .station-info {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: background-color 0.3s;
+        }
+        
+        .station-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .station-name-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .station-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .favorite-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 4px;
+        }
+        
+        .favorite-btn.active {
+            color: var(--accent-color);
+        }
+        
+        .station-lines {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .line-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+            white-space: nowrap;
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .btn-route-map {
+            background-color: var(--route-map-color);
+            color: white;
+            border: 1px solid #26734d;
+        }
+        .btn-google-map {
+            background-color: var(--google-map-color);
+            color: white;
+            border: 1px solid #3a6fa0;
+        }
+        .btn-street-map {
+            background-color: var(--street-map-color);
+            color: white;
+            border: 1px solid #3a6fa0;
+        }
+        
+        .btn-station-layout {
+            background-color: var(--station-layout-color);
+            color: white;
+            border: 1px solid #7b5fc5;
+        }
+        
+        .btn-exit-info {
+            background-color: var(--exit-info-color);
+            color: white;
+            border: 1px solid #a84300;
+        }
+        
+        .route-map-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+            min-height: 220px;
+            transition: background-color 0.3s;
+        }
+        
+        .route-map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .route-map-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+    
+        .line-name-header {
+            color: var(--primary-color);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .line-title-with-count {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+     
+        .line-color-indicator-header {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        
+        .station-count-badge {
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: var(--station-count-bg);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border-light);
+        }
+        
+        .route-map-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .route-map-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            white-space: nowrap;
+            font-weight: 600;
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+        }
+        
+        .route-map-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .route-map-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .route-map-btn:disabled:hover {
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+            transform: none;
+        }
+        
+        .route-map {
+            flex: 1;
+            background-color: var(--placeholder-bg);
+            border-radius: 6px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 140px;
+            padding: 8px 0;
+            transition: background-color 0.3s;
+        }
+        
+        .route-map-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 20px;
+            width: 100%;
+        }
+        
+        .route-map-placeholder i {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        
+        .route-map-content {
+            width: auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 15px;
+            min-width: min-content;
+        }
+        
+        .line-visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: auto;
+            min-width: min-content;
+            padding: 8px 0;
+        }
+        
+        .line-path {
+            display: flex;
+            align-items: center;
+            width: auto;
+            margin-bottom: 10px;
+            position: relative;
+            min-width: min-content;
+            padding: 8px 15px;
+        }
+        
+        .line-color-bar {
+            height: 6px;
+            width: 100%;
+            border-radius: 4px;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Enhanced Station Styles */
+        .station-marker {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            border: 3px solid var(--text-primary);
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .station-marker:hover {
+            transform: scale(1.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+        
+        .station-marker.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: scale(1.4);
+            box-shadow: 0 0 0 4px rgba(255, 107, 0, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        .station-marker.interchange {
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--light-gray) 100%);
+            border: 3px double var(--text-secondary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        .station-marker.interchange.active {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #ff8c42 100%);
+            border: 3px double #fff;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1.4); }
+            50% { transform: scale(1.5); }
+            100% { transform: scale(1.4); }
+        }
+        
+        .station-label {
+            position: absolute;
+            top: 22px;
+            font-size: 10px;
+            white-space: nowrap;
+            background: var(--station-label-bg);
+            padding: 5px 8px;
+            border-radius: 6px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+            z-index: 3;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            font-weight: 600;
+            border: 2px solid var(--card-bg);
+            backdrop-filter: blur(5px);
+            color: var(--text-primary);
+        }
+        
+        .station-label:hover {
+            background: var(--card-bg);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 4;
+        }
+        
+        .station-label.active {
+            font-weight: 800;
+            color: var(--accent-color);
+            background: var(--station-label-active-bg);
+            border-color: var(--accent-color);
+            transform: translateY(-2px) scale(1.1);
+            box-shadow: 0 5px 20px rgba(255, 107, 0, 0.4);
+            z-index: 5;
+        }
+
+        .station-label.interchange {
+            background: var(--station-label-interchange-bg);
+            border: 2px dashed var(--text-secondary);
+            font-weight: 700;
+        }
+
+        .station-label.interchange.active {
+            background: var(--station-label-interchange-active-bg);
+            border: 2px solid var(--accent-color);
+        }
+        
+        .station-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            min-height: 50px;
+            min-width: 50px;
+        }
+        
+        .direction-indicators {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 10px;
+            padding: 6px 0;
+            background: var(--direction-bg);
+            border-radius: 6px;
+        }
+        
+        .direction {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 0 10px;
+        }
+        
+        .direction i {
+            color: var(--primary-color);
+            font-size: 11px;
+        }
+        
+        .navigation-info {
+            margin-top: 8px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: center;
+            font-style: italic;
+            background: var(--navigation-info-bg);
+            padding: 5px 10px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .interchange-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: gold;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7px;
+            color: #333;
+            z-index: 6;
+            border: 1px solid #333;
+        }
+
+        /* Scrollbar styling */
+        .route-map::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .route-map::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+            border-radius: 4px;
+        }
+
+        .route-map::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+
+        .route-map::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        .scroll-hint {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 3px 6px;
+            border-radius: 12px;
+            font-size: 9px;
+            z-index: 10;
+            animation: fadeInOut 2s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 900px;
+            }
+            
+            .dropdowns {
+                flex-direction: row;
+            }
+            
+            .dropdown {
+                flex: 1;
+            }
+            
+            .actions {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .station-label {
+                max-width: 110px;
+                font-size: 11px;
+                padding: 6px 10px;
+            }
+
+            .route-map {
+                min-height: 150px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .station-label {
+                max-width: 80px;
+                font-size: 9px;
+                padding: 4px 6px;
+            }
+
+            .route-map {
+                min-height: 120px;
+            }
+            
+            .line-title-with-count {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+            
+            .line-name-header {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MTR Station Selector</h1>
+            <p>Find information about Hong Kong MTR stations</p>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+        
+        <div class="controls-panel">
+            <div class="dropdowns">
+                <div class="dropdown">
+                    <label for="lineSelect">MTR Line</label>
+                    <select id="lineSelect">
+                        <option value="">-- All Lines --</option>
+                    </select>
+                </div>
+                
+                <div class="dropdown">
+                    <label for="stationSelect">Station</label>
+                    <select id="stationSelect">
+                        <option value="">-- Select Station --</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="favorites-section">
+                <h3><i class="fas fa-star"></i> Favorites:</h3>
+                <div class="favorites-list" id="favoritesList">
+                    <!-- Favorites will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="station-info" id="stationInfo">
+            <div class="station-header">
+                <div class="station-name-row">
+                    <div class="station-name">Select a Station</div>
+                    <button class="favorite-btn" style="display: none;">
+                        <i class="fas fa-star"></i>
+                    </button>
+                </div>
+                <div class="station-lines">
+                    <!-- Station lines will be populated here -->
+                </div>
+            </div>
+            
+            <div class="actions">
+                <a href="https://www.mtr.com.hk/archive/en/services/routemap.pdf" target="_blank" class="btn btn-route-map">
+                    <i class="fas fa-route"></i> Route Map
+                </a>
+                <a href="#" id="googleMapLink" target="_blank" class="btn btn-google-map" style="display: none;">
+                    <i class="fas fa-map-marked-alt"></i> Google Map
+                </a>
+                <a href="#" id="streetMapLink" target="_blank" class="btn btn-street-map" style="display: none;">
+                    <i class="fas fa-map-marked-alt"></i> Street Map
+                </a>
+                <a href="#" id="layoutLink" target="_blank" class="btn btn-station-layout" style="display: none;">
+                    <i class="fas fa-map"></i> Station Layout
+                </a>
+                <a href="#" id="exitInfoLink" target="_blank" class="btn btn-exit-info" style="display: none;">
+                    <i class="fas fa-door-open"></i> Exit Info
+                </a>
+            </div>
+        </div>
+        
+        <div class="route-map-container">
+            <div class="route-map-header">
+                <div class="line-title-with-count">
+                    <div class="line-name-header" id="lineNameHeader">
+                        <div class="line-color-indicator-header"></div>
+                        <span>Select a line to view route</span>
+                    </div>
+                    <div class="station-count-badge" id="stationCountBadge">
+                        Select a station
+                    </div>
+                </div>
+                <div class="route-map-actions">
+                    <button class="route-map-btn" id="prevStationBtn">
+                        <i class="fas fa-arrow-left"></i> Prev
+                    </button>
+                    <button class="route-map-btn" id="nextStationBtn">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="route-map" id="routeMap">
+                <div class="route-map-placeholder">
+                    <i class="fas fa-train"></i>
+                    <p>Select a line and station to view route visualization</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Combined line data with colors
+        const lines = [
+            { "englishName": "East Rail Line", "chineseName": "東鐵綫", "color": "#5EB3E7" },
+            { "englishName": "Kwun Tong Line", "chineseName": "觀塘綫", "color": "#1A9431" },
+            { "englishName": "Tsuen Wan Line", "chineseName": "荃灣綫", "color": "#E31B23" },
+            { "englishName": "Island Line", "chineseName": "港島綫", "color": "#0066B3" },
+            { "englishName": "Tung Chung Line", "chineseName": "東涌綫", "color": "#F9A01B" },
+            { "englishName": "Airport Express", "chineseName": "機場快綫", "color": "#0098B6" },
+            { "englishName": "Tseung Kwan O Line", "chineseName": "將軍澳綫", "color": "#7D499D" },
+            { "englishName": "Tuen Ma Line", "chineseName": "屯馬綫", "color": "#B9531F" },
+            { "englishName": "Disneyland Resort Line", "chineseName": "迪士尼綫", "color": "#F5B1C7" },
+            { "englishName": "South Island Line", "chineseName": "南港島綫", "color": "#8CC63E" }
+        ];
+
+        // COMPLETE station data - all 87 MTR stations
+        const stations = [
+            // Interchange stations (appear on multiple lines)
+            {"shortName": "ADM", "chineseName": "金鐘", "englishName": "Admiralty", "lines": ["East Rail Line", "Island Line", "Tsuen Wan Line", "South Island Line"], "order": {"East Rail Line": 1, "Island Line": 6, "Tsuen Wan Line": 2, "South Island Line": 1}},
+            {"shortName": "CEN", "chineseName": "中環", "englishName": "Central", "lines": ["Island Line", "Tsuen Wan Line"], "order": {"Island Line": 5, "Tsuen Wan Line": 1}},
+            {"shortName": "NOP", "chineseName": "北角", "englishName": "North Point", "lines": ["Island Line", "Tseung Kwan O Line"], "order": {"Island Line": 11, "Tseung Kwan O Line": 1}},
+            {"shortName": "QUB", "chineseName": "鰂魚涌", "englishName": "Quarry Bay", "lines": ["Island Line", "Tseung Kwan O Line"], "order": {"Island Line": 12, "Tseung Kwan O Line": 2}},
+            {"shortName": "YAT", "chineseName": "油塘", "englishName": "Yau Tong", "lines": ["Kwun Tong Line", "Tseung Kwan O Line"], "order": {"Kwun Tong Line": 16, "Tseung Kwan O Line": 3}},
+            {"shortName": "TIK", "chineseName": "調景嶺", "englishName": "Tiu Keng Leng", "lines": ["Kwun Tong Line", "Tseung Kwan O Line"], "order": {"Kwun Tong Line": 17, "Tseung Kwan O Line": 4}},
+            {"shortName": "HUH", "chineseName": "紅磡", "englishName": "Hung Hom", "lines": ["East Rail Line", "Tuen Ma Line"], "order": {"East Rail Line": 3, "Tuen Ma Line":16}},
+            {"shortName": "HOM", "chineseName": "何文田", "englishName": "Ho Man Tin", "lines": ["Kwun Tong Line", "Tuen Ma Line"], "order": {"Kwun Tong Line": 2, "Tuen Ma Line": 15}},
+            {"shortName": "DIH", "chineseName": "鑽石山", "englishName": "Diamond Hill", "lines": ["Kwun Tong Line", "Tuen Ma Line"], "order": {"Kwun Tong Line": 10, "Tuen Ma Line": 11}},
+            {"shortName": "TAW", "chineseName": "大圍", "englishName": "Tai Wai", "lines": ["East Rail Line", "Tuen Ma Line"], "order": {"East Rail Line": 6, "Tuen Ma Line": 9}},
+            {"shortName": "MEF", "chineseName": "美孚", "englishName": "Mei Foo", "lines": ["Tsuen Wan Line", "Tuen Ma Line"], "order": {"Tsuen Wan Line": 11, "Tuen Ma Line": 20}},
+            {"shortName": "NAC", "chineseName": "南昌", "englishName": "Nam Cheong", "lines": ["Tung Chung Line", "Tuen Ma Line"], "order": {"Tung Chung Line": 4, "Tuen Ma Line": 19}},
+            {"shortName": "YMT", "chineseName": "油麻地", "englishName": "Yau Ma Tei", "lines": ["Tsuen Wan Line", "Kwun Tong Line"], "order": {"Tsuen Wan Line": 5, "Kwun Tong Line": 3}},
+            {"shortName": "MOK", "chineseName": "旺角", "englishName": "Mong Kok", "lines": ["Tsuen Wan Line", "Kwun Tong Line"], "order": {"Tsuen Wan Line": 6, "Kwun Tong Line": 4}},
+            {"shortName": "PRE", "chineseName": "太子", "englishName": "Prince Edward", "lines": ["Tsuen Wan Line", "Kwun Tong Line"], "order": {"Tsuen Wan Line": 7, "Kwun Tong Line": 5}},
+            {"shortName": "KOT", "chineseName": "九龍塘", "englishName": "Kowloon Tong", "lines": ["East Rail Line", "Kwun Tong Line"], "order": {"East Rail Line": 5, "Kwun Tong Line": 7}},
+            {"shortName": "LAK", "chineseName": "荔景", "englishName": "Lai King", "lines": ["Tsuen Wan Line", "Tung Chung Line"], "order": {"Tsuen Wan Line": 12, "Tung Chung Line": 5}},
+            {"shortName": "HOK", "chineseName": "香港", "englishName": "Hong Kong", "lines": ["Tung Chung Line", "Airport Express"], "order": {"Tung Chung Line": 1, "Airport Express": 1}},
+            {"shortName": "KOW", "chineseName": "九龍", "englishName": "Kowloon", "lines": ["Tung Chung Line", "Airport Express"], "order": {"Tung Chung Line": 2, "Airport Express": 2}},
+            {"shortName": "TSY", "chineseName": "青衣", "englishName": "Tsing Yi", "lines": ["Tung Chung Line", "Airport Express"], "order": {"Tung Chung Line": 6, "Airport Express": 3}},
+            {"shortName": "SUN", "chineseName": "欣澳", "englishName": "Sunny Bay", "lines": ["Tung Chung Line", "Disneyland Resort Line"], "order": {"Tung Chung Line": 7, "Disneyland Resort Line": 1}},
+            
+            // East Rail Line
+            {"shortName": "EXC", "chineseName": "會展", "englishName": "Exhibition Centre", "lines": ["East Rail Line"], "order": {"East Rail Line": 2}},
+            {"shortName": "MKK", "chineseName": "旺角東", "englishName": "Mong Kok East", "lines": ["East Rail Line"], "order": {"East Rail Line": 4}},
+            {"shortName": "SHT", "chineseName": "沙田", "englishName": "Sha Tin", "lines": ["East Rail Line"], "order": {"East Rail Line": 7}},
+            {"shortName": "FOT", "chineseName": "火炭", "englishName": "Fo Tan", "lines": ["East Rail Line"], "order": {"East Rail Line": 8}},
+            {"shortName": "RAC", "chineseName": "馬場", "englishName": "Racecourse", "lines": ["East Rail Line"], "order": {"East Rail Line": 9}},
+            {"shortName": "UNI", "chineseName": "大學", "englishName": "University", "lines": ["East Rail Line"], "order": {"East Rail Line": 10}},
+            {"shortName": "TAP", "chineseName": "大埔墟", "englishName": "Tai Po Market", "lines": ["East Rail Line"], "order": {"East Rail Line": 11}},
+            {"shortName": "TWO", "chineseName": "太和", "englishName": "Tai Wo", "lines": ["East Rail Line"], "order": {"East Rail Line": 12}},
+            {"shortName": "FAN", "chineseName": "粉嶺", "englishName": "Fanling", "lines": ["East Rail Line"], "order": {"East Rail Line": 13}},
+            {"shortName": "SHS", "chineseName": "上水", "englishName": "Sheung Shui", "lines": ["East Rail Line"], "order": {"East Rail Line": 14}},
+            {"shortName": "LOW", "chineseName": "羅湖", "englishName": "Lo Wu", "lines": ["East Rail Line"], "order": {"East Rail Line": 15}},
+            {"shortName": "LMC", "chineseName": "落馬洲", "englishName": "Lok Ma Chau", "lines": ["East Rail Line"], "order": {"East Rail Line": 16}},
+            
+            // Kwun Tong Line
+            {"shortName": "WHA", "chineseName": "黃埔", "englishName": "Whampoa", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 1}},
+            {"shortName": "SKM", "chineseName": "石硤尾", "englishName": "Shek Kip Mei", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 6}},
+            {"shortName": "LOF", "chineseName": "樂富", "englishName": "Lok Fu", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 8}},
+            {"shortName": "WTS", "chineseName": "黃大仙", "englishName": "Wong Tai Sin", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 9}},
+            {"shortName": "CHH", "chineseName": "彩虹", "englishName": "Choi Hung", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 11}},
+            {"shortName": "KOB", "chineseName": "九龍灣", "englishName": "Kowloon Bay", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 12}},
+            {"shortName": "NTK", "chineseName": "牛頭角", "englishName": "Ngau Tau Kok", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 13}},
+            {"shortName": "KWT", "chineseName": "觀塘", "englishName": "Kwun Tong", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 14}},
+            {"shortName": "LAT", "chineseName": "藍田", "englishName": "Lam Tin", "lines": ["Kwun Tong Line"], "order": {"Kwun Tong Line": 15}},
+            
+            // Tsuen Wan Line
+            {"shortName": "TST", "chineseName": "尖沙咀", "englishName": "Tsim Sha Tsui", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 3}},
+            {"shortName": "JOR", "chineseName": "佐敦", "englishName": "Jordan", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 4}},
+            {"shortName": "SSP", "chineseName": "深水埗", "englishName": "Sham Shui Po", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 8}},
+            {"shortName": "CSW", "chineseName": "長沙灣", "englishName": "Cheung Sha Wan", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 9}},
+            {"shortName": "LCK", "chineseName": "荔枝角", "englishName": "Lai Chi Kok", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 10}},
+            {"shortName": "KWF", "chineseName": "葵芳", "englishName": "Kwai Fong", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 13}},
+            {"shortName": "KWH", "chineseName": "葵興", "englishName": "Kwai Hing", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 14}},
+            {"shortName": "TWH", "chineseName": "大窩口", "englishName": "Tai Wo Hau", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 15}},
+            {"shortName": "TSW", "chineseName": "荃灣", "englishName": "Tsuen Wan", "lines": ["Tsuen Wan Line"], "order": {"Tsuen Wan Line": 16}},
+            
+            // Island Line
+            {"shortName": "KET", "chineseName": "堅尼地城", "englishName": "Kennedy Town", "lines": ["Island Line"], "order": {"Island Line": 1}},
+            {"shortName": "HKU", "chineseName": "香港大學", "englishName": "HKU", "lines": ["Island Line"], "order": {"Island Line": 2}},
+            {"shortName": "SYP", "chineseName": "西營盤", "englishName": "Sai Ying Pun", "lines": ["Island Line"], "order": {"Island Line": 3}},
+            {"shortName": "SHW", "chineseName": "上環", "englishName": "Sheung Wan", "lines": ["Island Line"], "order": {"Island Line": 4}},
+            {"shortName": "WAC", "chineseName": "灣仔", "englishName": "Wan Chai", "lines": ["Island Line"], "order": {"Island Line": 7}},
+            {"shortName": "CAB", "chineseName": "銅鑼灣", "englishName": "Causeway Bay", "lines": ["Island Line"], "order": {"Island Line": 8}},
+            {"shortName": "TIH", "chineseName": "天后", "englishName": "Tin Hau", "lines": ["Island Line"], "order": {"Island Line": 9}},
+            {"shortName": "FOH", "chineseName": "炮台山", "englishName": "Fortress Hill", "lines": ["Island Line"], "order": {"Island Line": 10}},
+            {"shortName": "TAK", "chineseName": "太古", "englishName": "Tai Koo", "lines": ["Island Line"], "order": {"Island Line": 13}},
+            {"shortName": "SWH", "chineseName": "西灣河", "englishName": "Sai Wan Ho", "lines": ["Island Line"], "order": {"Island Line": 14}},
+            {"shortName": "SKW", "chineseName": "筲箕灣", "englishName": "Shau Kei Wan", "lines": ["Island Line"], "order": {"Island Line": 15}},
+            {"shortName": "HFC", "chineseName": "杏花邨", "englishName": "Heng Fa Chuen", "lines": ["Island Line"], "order": {"Island Line": 16}},
+            {"shortName": "CHW", "chineseName": "柴灣", "englishName": "Chai Wan", "lines": ["Island Line"], "order": {"Island Line": 17}},
+            
+            // South Island Line
+            {"shortName": "OCP", "chineseName": "海洋公園", "englishName": "Ocean Park", "lines": ["South Island Line"], "order": {"South Island Line": 2}},
+            {"shortName": "WCH", "chineseName": "黃竹坑", "englishName": "Wong Chuk Hang", "lines": ["South Island Line"], "order": {"South Island Line": 3}},
+            {"shortName": "LET", "chineseName": "利東", "englishName": "Lei Tung", "lines": ["South Island Line"], "order": {"South Island Line": 4}},
+            {"shortName": "SOH", "chineseName": "海怡半島", "englishName": "South Horizons", "lines": ["South Island Line"], "order": {"South Island Line": 5}},
+            
+            // Tuen Ma Line
+            {"shortName": "WKS", "chineseName": "烏溪沙", "englishName": "Wu Kai Sha", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 1}},
+            {"shortName": "MOS", "chineseName": "馬鞍山", "englishName": "Ma On Shan", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 2}},
+            {"shortName": "HEO", "chineseName": "恆安", "englishName": "Heng On", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 3}},
+            {"shortName": "TSH", "chineseName": "大水坑", "englishName": "Tai Shui Hang", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 4}},
+            {"shortName": "SHM", "chineseName": "石門", "englishName": "Shek Mun", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 5}},
+            {"shortName": "CIO", "chineseName": "第一城", "englishName": "City One", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 6}},
+            {"shortName": "STW", "chineseName": "沙田圍", "englishName": "Sha Tin Wai", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 7}},
+            {"shortName": "CKT", "chineseName": "車公廟", "englishName": "Che Kung Temple", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 8}},
+            {"shortName": "HIK", "chineseName": "顯徑", "englishName": "Hin Keng", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 10}},
+            {"shortName": "KAT", "chineseName": "啟德", "englishName": "Kai Tak", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 12}},
+            {"shortName": "SUW", "chineseName": "宋皇臺", "englishName": "Sung Wong Toi", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 13}},
+            {"shortName": "TKW", "chineseName": "土瓜灣", "englishName": "To Kwa Wan", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 14}},
+            {"shortName": "ETS", "chineseName": "東尖沙咀", "englishName": "East Tsim Sha Tsui", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 17}},
+            {"shortName": "AUS", "chineseName": "柯士甸", "englishName": "Austin", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 18}},
+            {"shortName": "TWW", "chineseName": "荃灣西", "englishName": "Tsuen Wan West", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 21}},
+            {"shortName": "KSR", "chineseName": "錦上路", "englishName": "Kam Sheung Road", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 22}},
+            {"shortName": "YUL", "chineseName": "元朗", "englishName": "Yuen Long", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 23}},
+            {"shortName": "LOP", "chineseName": "朗屏", "englishName": "Long Ping", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 24}},
+            {"shortName": "TIS", "chineseName": "天水圍", "englishName": "Tin Shui Wai", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 25}},
+            {"shortName": "SIH", "chineseName": "兆康", "englishName": "Siu Hong", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 26}},
+            {"shortName": "TUM", "chineseName": "屯門", "englishName": "Tuen Mun", "lines": ["Tuen Ma Line"], "order": {"Tuen Ma Line": 27}},
+            
+            // Tung Chung Line
+            {"shortName": "OLY", "chineseName": "奧運", "englishName": "Olympic", "lines": ["Tung Chung Line"], "order": {"Tung Chung Line": 3}},
+            {"shortName": "TUC", "chineseName": "東涌", "englishName": "Tung Chung", "lines": ["Tung Chung Line"], "order": {"Tung Chung Line": 8}},
+            
+            // Tseung Kwan O Line
+            {"shortName": "TKO", "chineseName": "將軍澳", "englishName": "Tseung Kwan O", "lines": ["Tseung Kwan O Line"], "order": {"Tseung Kwan O Line": 5}},
+            {"shortName": "HAH", "chineseName": "坑口", "englishName": "Hang Hau", "lines": ["Tseung Kwan O Line"], "order": {"Tseung Kwan O Line": 6}},
+            {"shortName": "POA", "chineseName": "寶琳", "englishName": "Po Lam", "lines": ["Tseung Kwan O Line"], "order": {"Tseung Kwan O Line": 7}},
+            {"shortName": "LHP", "chineseName": "日出康城", "englishName": "LOHAS Park", "lines": ["Tseung Kwan O Line"], "order": {"Tseung Kwan O Line": 8}},
+            
+            // Airport Express
+            {"shortName": "AIR", "chineseName": "機場", "englishName": "Airport", "lines": ["Airport Express"], "order": {"Airport Express": 4}},
+            {"shortName": "AWE", "chineseName": "亞洲國際博覽館", "englishName": "AsiaWorld-Expo", "lines": ["Airport Express"], "order": {"Airport Express": 5}},
+            
+            // Disneyland Resort Line
+            {"shortName": "DIS", "chineseName": "迪士尼", "englishName": "Disneyland Resort", "lines": ["Disneyland Resort Line"], "order": {"Disneyland Resort Line": 2}}
+        ];
+
+        // DOM elements
+        const lineSelect = document.getElementById('lineSelect');
+        const stationSelect = document.getElementById('stationSelect');
+        const layoutLink = document.getElementById('layoutLink');
+        const googleMapLink = document.getElementById('googleMapLink');
+        const streetMapLink = document.getElementById('streetMapLink');
+        const exitInfoLink = document.getElementById('exitInfoLink');
+        const stationInfo = document.getElementById('stationInfo');
+        const favoritesList = document.getElementById('favoritesList');
+        const routeMap = document.getElementById('routeMap');
+        const prevStationBtn = document.getElementById('prevStationBtn');
+        const nextStationBtn = document.getElementById('nextStationBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        const stationCountBadge = document.getElementById('stationCountBadge');
+        const lineNameHeader = document.getElementById('lineNameHeader');
+
+        // Global variables for route navigation
+        let currentLineStations = [];
+        let currentStationIndex = -1;
+        let currentLine = '';
+
+        // Favorites storage
+        let favorites = JSON.parse(localStorage.getItem('mtrFavorites')) || [];
+        
+        // Last viewed station and line storage
+        const LAST_VIEWED_LINE_KEY = 'mtrLastViewedLine';
+        const LAST_VIEWED_STATION_KEY = 'mtrLastViewedStation';
+        
+        // Theme storage
+        const THEME_KEY = 'mtrTheme';
+
+        // Initialize the application
+        function init() {
+            populateLineDropdown();
+            updateFavoritesList();
+            setupEventListeners();
+            setupTheme();
+            
+            // Try to load last viewed line and station
+            const lastViewedLine = localStorage.getItem(LAST_VIEWED_LINE_KEY);
+            const lastViewedStation = localStorage.getItem(LAST_VIEWED_STATION_KEY);
+            
+            if (lastViewedLine && lastViewedStation) {
+                // Set the line first
+                lineSelect.value = lastViewedLine;
+                // Filter stations for that line
+                filterStations();
+                // Wait for dropdown to populate, then set station
+                setTimeout(() => {
+                    if (stationSelect.querySelector(`option[value="${lastViewedStation}"]`)) {
+                        stationSelect.value = lastViewedStation;
+                        displayStationInfo();
+                    } else {
+                        setDefaultStation();
+                    }
+                }, 100);
+            } else {
+                setDefaultStation();
+            }
+        }
+
+        function setDefaultStation() {
+            lineSelect.value = 'South Island Line';
+            filterStations();
+            setTimeout(() => {
+                stationSelect.value = 'OCP';
+                displayStationInfo();
+            }, 100);
+        }
+
+        // Setup theme based on user preference or system preference
+        function setupTheme() {
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (systemPrefersDark) {
+                applyTheme('dark');
+            } else {
+                applyTheme('light');
+            }
+        }
+
+        // Apply theme to the document
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem(THEME_KEY, theme);
+            
+            // Update theme toggle button
+            const icon = themeToggle.querySelector('i');
+            if (theme === 'dark') {
+                icon.className = 'fas fa-sun';
+                themeToggle.setAttribute('aria-label', 'Switch to light mode');
+            } else {
+                icon.className = 'fas fa-moon';
+                themeToggle.setAttribute('aria-label', 'Switch to dark mode');
+            }
+        }
+
+        // Toggle between light and dark mode
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+
+        // Populate line dropdown
+        function populateLineDropdown() {
+            lines.forEach(line => {
+                const option = document.createElement('option');
+                option.value = line.englishName;
+                option.textContent = `${line.chineseName} (${line.englishName})`;
+                lineSelect.appendChild(option);
+            });
+        }
+
+        // Filter stations based on selected line
+        function filterStations() {
+            const selectedLine = lineSelect.value;
+            
+            stationSelect.innerHTML = '<option value="">-- Select Station --</option>';
+
+            let filteredStations = selectedLine
+                ? stations.filter(station => station.lines.includes(selectedLine))
+                : stations;
+
+            // Sort stations by their order on the selected line
+            if (selectedLine) {
+                filteredStations.sort((a, b) => a.order[selectedLine] - b.order[selectedLine]);
+            }
+
+            // Add stations to dropdown
+            filteredStations.forEach(station => {
+                const option = document.createElement('option');
+                option.value = station.shortName;
+                option.textContent = `${station.chineseName} (${station.englishName})`;
+                stationSelect.appendChild(option);
+            });
+        }
+
+        // Display station information
+        function displayStationInfo() {
+            const selectedStationCode = stationSelect.value;
+            const selectedLine = lineSelect.value;
+            
+            if (!selectedStationCode) {
+                resetStationInfo();
+                return;
+            }
+
+            const selectedStation = stations.find(station => station.shortName === selectedStationCode);
+            
+            if (selectedStation) {
+                // Save last viewed line and station
+                localStorage.setItem(LAST_VIEWED_LINE_KEY, selectedLine);
+                localStorage.setItem(LAST_VIEWED_STATION_KEY, selectedStation.shortName);
+                
+                // Update layout link - FIXED URL
+                layoutLink.href = `https://www.mtr.com.hk/archive/en/services/layouts/${selectedStation.shortName.toLowerCase()}.pdf`;
+                layoutLink.style.display = 'flex';
+                
+                // Update google map link - FIXED URL
+                googleMapLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedStation.englishName + " MTR Station Hong Kong")}`;
+                googleMapLink.style.display = 'flex';
+                
+                // Update street map link - FIXED URL
+                streetMapLink.href = `https://www.mtr.com.hk/archive/en/services/maps/${selectedStation.shortName.toLowerCase()}.pdf`;
+                streetMapLink.style.display = 'flex';
+                
+                // Update exit info link - FIXED URL (Recovered original URL)
+                exitInfoLink.href = `https://exit.mtrmb.mtr.com.hk/stations/${selectedStation.shortName}`;
+                exitInfoLink.style.display = 'flex';
+                
+                // Update station info panel
+                const isFavorite = favorites.includes(selectedStation.shortName);
+                const stationNameEl = stationInfo.querySelector('.station-name');
+                const favoriteBtn = stationInfo.querySelector('.favorite-btn');
+                const stationLinesEl = stationInfo.querySelector('.station-lines');
+                
+                stationNameEl.textContent = `${selectedStation.chineseName} (${selectedStation.englishName})`;
+                favoriteBtn.className = `favorite-btn ${isFavorite ? 'active' : ''}`;
+                favoriteBtn.style.display = 'block';
+                favoriteBtn.onclick = () => toggleFavorite(selectedStation.shortName);
+                
+                // Update station lines with colors from combined lines data
+                stationLinesEl.innerHTML = selectedStation.lines.map(lineName => {
+                    const line = lines.find(l => l.englishName === lineName);
+                    return line ? `<span class="line-badge" style="background-color: ${line.color}">${lineName}</span>` : '';
+                }).join('');
+                
+                // Update route map visualization
+                updateRouteMap(selectedStation);
+            } else {
+                resetStationInfo();
+            }
+        }
+
+        // Update route map visualization with enhanced station overlays
+        function updateRouteMap(selectedStation) {
+            // Clear previous content
+            routeMap.innerHTML = '';
+            
+            // Create route map content
+            const routeMapContent = document.createElement('div');
+            routeMapContent.className = 'route-map-content';
+            
+            // Get the currently selected line from dropdown
+            currentLine = lineSelect.value;
+            const lineData = lines.find(l => l.englishName === currentLine);
+            
+            if (!lineData) {
+                routeMap.innerHTML = `
+                    <div class="route-map-placeholder">
+                        <i class="fas fa-train"></i>
+                        <p>Select a specific line to view route visualization</p>
+                    </div>
+                `;
+                // Reset line name header
+                const colorIndicator = lineNameHeader.querySelector('.line-color-indicator-header');
+                const textSpan = lineNameHeader.querySelector('span');
+                colorIndicator.style.backgroundColor = '';
+                textSpan.textContent = "Select a line to view route";
+                stationCountBadge.textContent = "Select a station";
+                return;
+            }
+            
+            // Get all stations on this line, sorted by order
+            currentLineStations = stations
+                .filter(station => station.lines.includes(currentLine))
+                .sort((a, b) => a.order[currentLine] - b.order[currentLine]);
+            
+            // Find current station index
+            currentStationIndex = currentLineStations.findIndex(station => 
+                station.shortName === selectedStation.shortName
+            );
+            
+            // Update line name header with color indicator
+            const colorIndicator = lineNameHeader.querySelector('.line-color-indicator-header');
+            const textSpan = lineNameHeader.querySelector('span');
+            colorIndicator.style.backgroundColor = lineData.color;
+            textSpan.textContent = `${lineData.chineseName} (${lineData.englishName})`;
+            
+            // Update station count badge
+            const interchangeCount = currentLineStations.filter(station => station.lines.length > 1).length;
+            stationCountBadge.textContent = `${currentStationIndex + 1} of ${currentLineStations.length} stations${interchangeCount > 0 ? ` • ${interchangeCount} interchange${interchangeCount > 1 ? 's' : ''}` : ''}`;
+            
+            // Create line visualization
+            const lineVisualization = document.createElement('div');
+            lineVisualization.className = 'line-visualization';
+            
+            // Create line path with stations
+            const linePath = document.createElement('div');
+            linePath.className = 'line-path';
+            
+            // Add line color bar
+            const lineColorBar = document.createElement('div');
+            lineColorBar.className = 'line-color-bar';
+            lineColorBar.style.backgroundColor = lineData.color;
+            linePath.appendChild(lineColorBar);
+            
+            // Add stations as markers
+            currentLineStations.forEach((station, index) => {
+                const isActive = station.shortName === selectedStation.shortName;
+                const isInterchange = station.lines.length > 1;
+                
+                const stationContainer = document.createElement('div');
+                stationContainer.className = 'station-container';
+                
+                // Create station marker
+                const stationMarker = document.createElement('div');
+                stationMarker.className = `station-marker ${isActive ? 'active' : ''} ${isInterchange ? 'interchange' : ''}`;
+                stationMarker.dataset.stationCode = station.shortName;
+                stationMarker.title = `${station.chineseName} (${station.englishName})`;
+                stationMarker.setAttribute('tabindex', '0');
+                stationMarker.addEventListener('click', () => {
+                    stationSelect.value = station.shortName;
+                    displayStationInfo();
+                });
+                stationMarker.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        stationSelect.value = station.shortName;
+                        displayStationInfo();
+                    }
+                });
+                
+                // Create station label with enhanced features
+                const stationLabel = document.createElement('div');
+                stationLabel.className = `station-label ${isActive ? 'active' : ''} ${isInterchange ? 'interchange' : ''}`;
+                stationLabel.textContent = station.chineseName;
+                stationLabel.title = `${station.chineseName} (${station.englishName})`;
+                stationLabel.dataset.stationCode = station.shortName;
+                stationLabel.setAttribute('tabindex', '0');
+                stationLabel.addEventListener('click', () => {
+                    stationSelect.value = station.shortName;
+                    displayStationInfo();
+                });
+                stationLabel.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        stationSelect.value = station.shortName;
+                        displayStationInfo();
+                    }
+                });
+                
+                // Add interchange badge for stations with multiple lines
+                if (isInterchange) {
+                    const interchangeBadge = document.createElement('div');
+                    interchangeBadge.className = 'interchange-badge';
+                    interchangeBadge.innerHTML = '<i class="fas fa-exchange-alt"></i>';
+                    stationLabel.appendChild(interchangeBadge);
+                }
+                
+                stationContainer.appendChild(stationMarker);
+                stationContainer.appendChild(stationLabel);
+                linePath.appendChild(stationContainer);
+            });
+            
+            lineVisualization.appendChild(linePath);
+            
+            // Add direction indicators
+            const directionIndicators = document.createElement('div');
+            directionIndicators.className = 'direction-indicators';
+            
+            const firstStation = currentLineStations[0];
+            const lastStation = currentLineStations[currentLineStations.length - 1];
+            
+            const startDirection = document.createElement('div');
+            startDirection.className = 'direction';
+            startDirection.innerHTML = `<i class="fas fa-arrow-right"></i> ${firstStation.chineseName}`;
+            
+            const endDirection = document.createElement('div');
+            endDirection.className = 'direction';
+            endDirection.innerHTML = `${lastStation.chineseName} <i class="fas fa-arrow-right"></i>`;
+            
+            directionIndicators.appendChild(startDirection);
+            directionIndicators.appendChild(endDirection);
+            lineVisualization.appendChild(directionIndicators);
+            
+            // Add enhanced navigation info
+            const navigationInfo = document.createElement('div');
+            navigationInfo.className = 'navigation-info';
+            navigationInfo.innerHTML = `
+                <i class="fas fa-mouse-pointer"></i> Click on any station marker or name to select it
+                ${interchangeCount > 0 ? ' • <i class="fas fa-exchange-alt"></i> Dashed borders indicate interchange stations' : ''}
+            `;
+            lineVisualization.appendChild(navigationInfo);
+            
+            routeMapContent.appendChild(lineVisualization);
+            routeMap.appendChild(routeMapContent);
+            
+            // Auto-scroll to show the active station
+            setTimeout(() => {
+                const activeStation = routeMap.querySelector('.station-marker.active');
+                if (activeStation) {
+                    activeStation.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'center'
+                    });
+                }
+                
+                // Add scroll hint for long lines
+                if (currentLineStations.length > 10) {
+                    addScrollHint();
+                }
+            }, 100);
+            
+            // Update navigation buttons state
+            updateNavigationButtons();
+        }
+
+        function addScrollHint() {
+            const scrollHint = document.createElement('div');
+            scrollHint.className = 'scroll-hint';
+            scrollHint.innerHTML = '<i class="fas fa-arrows-left-right"></i> Scroll to see more stations';
+            routeMap.appendChild(scrollHint);
+            
+            // Remove hint after 5 seconds
+            setTimeout(() => {
+                if (scrollHint.parentNode) {
+                    scrollHint.parentNode.removeChild(scrollHint);
+                }
+            }, 5000);
+        }
+
+        // Update navigation buttons state
+        function updateNavigationButtons() {
+            prevStationBtn.disabled = currentStationIndex <= 0;
+            nextStationBtn.disabled = currentStationIndex >= currentLineStations.length - 1;
+        }
+
+        // Navigate to previous station
+        function navigateToPreviousStation() {
+            if (currentStationIndex > 0) {
+                currentStationIndex--;
+                const station = currentLineStations[currentStationIndex];
+                stationSelect.value = station.shortName;
+                displayStationInfo();
+            }
+        }
+
+        // Navigate to next station
+        function navigateToNextStation() {
+            if (currentStationIndex < currentLineStations.length - 1) {
+                currentStationIndex++;
+                const station = currentLineStations[currentStationIndex];
+                stationSelect.value = station.shortName;
+                displayStationInfo();
+            }
+        }
+
+        // Reset station information to default state
+        function resetStationInfo() {
+            layoutLink.style.display = 'none';
+            googleMapLink.style.display = 'none';
+            streetMapLink.style.display = 'none';
+            exitInfoLink.style.display = 'none';
+            
+            const stationNameEl = stationInfo.querySelector('.station-name');
+            const favoriteBtn = stationInfo.querySelector('.favorite-btn');
+            const stationLinesEl = stationInfo.querySelector('.station-lines');
+            
+            stationNameEl.textContent = 'Select a Station';
+            favoriteBtn.style.display = 'none';
+            stationLinesEl.innerHTML = '';
+            
+            // Reset route map
+            routeMap.innerHTML = `
+                <div class="route-map-placeholder">
+                    <i class="fas fa-train"></i>
+                    <p>Select a line and station to view route visualization</p>
+                </div>
+            `;
+            
+            // Reset line name header
+            const colorIndicator = lineNameHeader.querySelector('.line-color-indicator-header');
+            const textSpan = lineNameHeader.querySelector('span');
+            colorIndicator.style.backgroundColor = '';
+            textSpan.textContent = "Select a line to view route";
+            stationCountBadge.textContent = "Select a station";
+            
+            // Reset navigation variables
+            currentLineStations = [];
+            currentStationIndex = -1;
+            currentLine = '';
+            
+            // Enable navigation buttons
+            prevStationBtn.disabled = false;
+            nextStationBtn.disabled = false;
+        }
+
+        // Toggle favorite status
+        function toggleFavorite(stationCode) {
+            const index = favorites.indexOf(stationCode);
+            
+            if (index > -1) {
+                // Remove from favorites
+                favorites.splice(index, 1);
+            } else {
+                // Add to favorites
+                favorites.push(stationCode);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('mtrFavorites', JSON.stringify(favorites));
+            
+            // Update UI
+            updateFavoritesList();
+            
+            // Update favorite button if this station is currently selected
+            if (stationSelect.value === stationCode) {
+                const favoriteBtn = stationInfo.querySelector('.favorite-btn');
+                favoriteBtn.className = `favorite-btn ${index === -1 ? 'active' : ''}`;
+            }
+        }
+
+        // Update favorites list
+        function updateFavoritesList() {
+            favoritesList.innerHTML = '';
+            
+            if (favorites.length === 0) {
+                favoritesList.innerHTML = '<span style="color: var(--text-secondary); font-style: italic; font-size: 11px;">None</span>';
+                return;
+            }
+            
+            favorites.forEach(stationCode => {
+                const station = stations.find(s => s.shortName === stationCode);
+                if (station) {
+                    const favoriteItem = document.createElement('div');
+                    favoriteItem.className = 'favorite-item';
+                    favoriteItem.innerHTML = `
+                        <i class="fas fa-star"></i>
+                        ${station.chineseName}
+                    `;
+                    favoriteItem.onclick = () => {
+                        // Find which line this station belongs to
+                        const line = station.lines[0];
+                        lineSelect.value = line;
+                        filterStations();
+                        
+                        // Wait for the dropdown to be populated before setting the station
+                        setTimeout(() => {
+                            stationSelect.value = stationCode;
+                            displayStationInfo();
+                        }, 0);
+                    };
+                    favoritesList.appendChild(favoriteItem);
+                }
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            lineSelect.addEventListener('change', filterStations);
+            stationSelect.addEventListener('change', displayStationInfo);
+            
+            // Route map navigation
+            prevStationBtn.addEventListener('click', navigateToPreviousStation);
+            nextStationBtn.addEventListener('click', navigateToNextStation);
+            
+            // Theme toggle
+            themeToggle.addEventListener('click', toggleTheme);
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.scrollTo(0, 0);
+            init();
+        });
+    </script>
+</body>
+</html>
