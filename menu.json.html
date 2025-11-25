@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Files</title>
+    <style>
+        :root {
+            --primary-color: #007cba;
+            --secondary-color: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #333;
+            --text-muted: #6c757d;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            position: relative;
+        }
+        
+        h1 {
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+        
+        .search-box {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        #searchInput {
+            width: 80%;
+            padding: 12px 45px 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        #searchInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+        
+        .category-section {
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .category-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .category-header:hover {
+            background: #0069a3;
+        }
+        
+        .category-count {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+        
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+        
+        .file-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-item:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .file-link {
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.1em;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-link:hover {
+            text-decoration: underline;
+        }
+        
+        .file-icon {
+            font-size: 1.2em;
+        }
+        
+        .file-description {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .file-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .file-date {
+            white-space: nowrap;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: var(--error-color);
+            background: #f8d7da;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #0069a3;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-loaded {
+            background: var(--success-color);
+        }
+        
+        .status-loading {
+            background: var(--warning-color);
+        }
+        
+        .status-error {
+            background: var(--error-color);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .file-meta {
+                margin-top: 10px;
+                align-self: flex-end;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 HTML Files</h1>
+        <p class="subtitle">Browse and navigate through all HTML files in this directory</p>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search files by name or description...">
+            <div class="search-icon">🔍</div>
+        </div>
+        
+        <div id="statusMessage"></div>
+        
+        <div id="categoriesContainer">
+            <div class="loading">
+                <div>Loading file index...</div>
+                <div style="margin-top: 10px; font-size: 0.9em;" id="loadingProgress"></div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div>
+                <span id="statusIndicator" class="status-indicator status-loading"></span>
+                Status: <span id="statusText">Loading...</span>
+            </div>
+            <div>Total files: <span id="totalFiles">0</span></div>
+            <div>Last updated: <span id="currentDate"></span></div>
+            <button class="refresh-btn" onclick="loadJSONData()">Refresh Data</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            jsonFile: 'links-data.json',
+            cacheDuration: 5 * 60 * 1000, // 5 minutes cache
+            retryAttempts: 3,
+            retryDelay: 1000
+        };
+
+        let linksData = null;
+        let retryCount = 0;
+
+        // Function to load JSON data
+        async function loadJSONData() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const statusMessage = document.getElementById('statusMessage');
+            const loadingProgress = document.getElementById('loadingProgress');
+            
+            try {
+                // Show loading state
+                statusIndicator.className = 'status-indicator status-loading';
+                statusText.textContent = 'Loading...';
+                statusMessage.innerHTML = '';
+                loadingProgress.textContent = 'Fetching data from JSON file...';
+                
+                // Add cache busting parameter
+                const url = `${CONFIG.jsonFile}?v=${new Date().getTime()}`;
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Validate JSON structure
+                if (!data.categories || !Array.isArray(data.categories)) {
+                    throw new Error('Invalid JSON structure: missing categories array');
+                }
+                
+                linksData = data;
+                retryCount = 0;
+                
+                // Update UI
+                statusIndicator.className = 'status-indicator status-loaded';
+                statusText.textContent = 'Loaded successfully';
+                loadingProgress.textContent = 'Rendering file list...';
+                
+                renderFiles(linksData);
+                updateStats();
+                
+                // Store in localStorage with timestamp
+                const cacheData = {
+                    data: linksData,
+                    timestamp: new Date().getTime()
+                };
+                localStorage.setItem('linksCache', JSON.stringify(cacheData));
+                
+            } catch (error) {
+                retryCount++;
+                
+                if (retryCount <= CONFIG.retryAttempts) {
+                    statusText.textContent = `Retrying... (${retryCount}/${CONFIG.retryAttempts})`;
+                    loadingProgress.textContent = `Error: ${error.message}. Retrying in ${CONFIG.retryDelay/1000}s...`;
+                    
+                    setTimeout(loadJSONData, CONFIG.retryDelay);
+                    return;
+                }
+                
+                // Final error state
+                statusIndicator.className = 'status-indicator status-error';
+                statusText.textContent = 'Failed to load';
+                
+                statusMessage.innerHTML = `
+                    <div class="error">
+                        <strong>Error loading file index:</strong><br>
+                        ${error.message}<br><br>
+                        <small>Make sure <strong>${CONFIG.jsonFile}</strong> exists and contains valid JSON data.</small>
+                    </div>
+                `;
+                
+                // Try to load from cache
+                loadFromCache();
+            }
+        }
+
+        // Function to load data from cache
+        function loadFromCache() {
+            try {
+                const cached = localStorage.getItem('linksCache');
+                if (cached) {
+                    const cacheData = JSON.parse(cached);
+                    const now = new Date().getTime();
+                    
+                    if (now - cacheData.timestamp < CONFIG.cacheDuration) {
+                        linksData = cacheData.data;
+                        renderFiles(linksData);
+                        updateStats();
+                        
+                        document.getElementById('statusText').textContent = 'Loaded from cache';
+                        document.getElementById('statusIndicator').className = 'status-indicator status-loaded';
+                        
+                        document.getElementById('statusMessage').innerHTML = `
+                            <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                                ⚠️ Showing cached data. Some information might be outdated.
+                            </div>
+                        `;
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to load from cache:', error);
+            }
+            return false;
+        }
+
+        // Function to render categories and files
+        function renderFiles(data, searchTerm = '') {
+            const container = document.getElementById('categoriesContainer');
+            
+            if (!data || !data.categories) {
+                container.innerHTML = '<div class="error">No data available</div>';
+                return;
+            }
+            
+            let totalFiles = 0;
+            let html = '';
+
+            data.categories.forEach(category => {
+                // Filter files based on search term
+                const filteredFiles = category.files.filter(file => 
+                    file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    file.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    file.filename.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                if (filteredFiles.length === 0 && searchTerm) {
+                    return; // Skip empty categories during search
+                }
+
+                totalFiles += filteredFiles.length;
+
+                html += `
+                    <div class="category-section">
+                        <h2 class="category-header" onclick="toggleCategory(this)">
+                            ${category.name}
+                            <span class="category-count">${filteredFiles.length}</span>
+                        </h2>
+                        <ul class="file-list">
+                            ${filteredFiles.length > 0 ? 
+                                filteredFiles.map(file => `
+                                    <li class="file-item">
+                                        <div style="flex-grow: 1;">
+                                            <a href="${file.filename}" class="file-link">
+                                                <span class="file-icon">${file.icon || '📄'}</span>
+                                                ${file.name}
+                                            </a>
+                                            <div class="file-description">${file.description}</div>
+                                        </div>
+                                        <div class="file-meta">
+                                            <span class="file-date">${file.lastModified}</span>
+                                        </div>
+                                    </li>
+                                `).join('') : 
+                                `<li class="no-results">No files in this category</li>`
+                            }
+                        </ul>
+                        ${category.description && !searchTerm ? 
+                            `<div style="padding: 10px 20px; background: #f8f9fa; color: #6c757d; font-size: 0.9em;">
+                                ${category.description}
+                            </div>` : ''
+                        }
+                    </div>
+                `;
+            });
+
+            // Show no results message if searching
+            if (searchTerm && totalFiles === 0) {
+                html = `<div class="no-results">No files found matching "${searchTerm}"</div>`;
+            }
+
+            container.innerHTML = html;
+            document.getElementById('totalFiles').textContent = totalFiles;
+        }
+
+        // Function to toggle category visibility
+        function toggleCategory(header) {
+            const fileList = header.nextElementSibling;
+            const isVisible = fileList.style.display !== 'none';
+            fileList.style.display = isVisible ? 'none' : 'block';
+        }
+
+        // Search functionality
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            let searchTimeout;
+
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    if (linksData) {
+                        renderFiles(linksData, e.target.value.trim());
+                    }
+                }, 300);
+            });
+
+            // Clear search on Escape key
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    renderFiles(linksData);
+                }
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Try to load from cache first for instant display
+            if (!loadFromCache()) {
+                loadJSONData();
+            } else {
+                document.getElementById('statusText').textContent = 'Loaded from cache';
+            }
+            
+            setupSearch();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+            
+            if (e.key === 'F5') {
+                e.preventDefault();
+                loadJSONData();
+            }
+        });
+
+        // Auto-refresh data every 10 minutes
+        setInterval(() => {
+            loadJSONData();
+        }, 10 * 60 * 1000);
+    </script>
+</body>
+</html>
