@@ -45,6 +45,13 @@
                     "name": "Support",
                     "description": "Support resources",
                     "files": [
+                       {
+                            "name": "MTR Station Selector",
+                            "filename": "mtr_stations.3.2.16a.html",
+                            "description": "",
+                            "lastModified": "2025-11-25",
+                            "icon": "📚"
+                        },               
                         {
                             "name": "Doc1",
                             "filename": "h01.html",
