@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Files Index</title>
+    <style>
+        :root {
+            --primary-color: #007cba;
+            --secondary-color: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #333;
+            --text-muted: #6c757d;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+        
+        .search-box {
+            margin-bottom: 25px;
+        }
+        
+        #searchInput {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        #searchInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .category-section {
+            margin-bottom: 30px;
+        }
+        
+        .category-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .category-count {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+        
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+        
+        .file-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-item:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .file-link {
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.1em;
+            flex-grow: 1;
+        }
+        
+        .file-link:hover {
+            text-decoration: underline;
+        }
+        
+        .file-description {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .file-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .file-date {
+            white-space: nowrap;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .file-meta {
+                margin-top: 10px;
+                align-self: flex-end;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container"> 
+        <div id="categoriesContainer">
+            <!-- Categories will be dynamically generated here -->
+        </div>
+        
+        <div class="stats">
+            <div>Total files: <span id="totalFiles">0</span></div>
+            <div>Last updated: <span id="currentDate"></span></div>
+        </div>
+    </div>
+
+    <script>
+        // JSON data store for links
+        const linksData = {
+            "lastUpdated": "2025-11-25",
+            "categories": [
+                {
+                    "name": "Main Pages",
+                    "description": "Primary navigation pages",
+                    "files": [
+                        {
+                            "name": "Home",
+                            "filename": "index.html",
+                            "description": "Main index page",
+                            "lastModified": "2024-01-15",
+                            "icon": "🏠"
+                        },
+                        {
+                            "name": "Readme",
+                            "filename": "README.md",
+                            "description": "",
+                            "lastModified": "2025-01-01",
+                            "icon": "👥"
+                        }
+                    ]
+                },
+                {
+                    "name": "Game",
+                    "description": "HTML Game",
+                    "files": [
+                        {
+                            "name": "PacMan",
+                            "filename": "PacMan.4.0.1.html",
+                            "description": "",
+                            "lastModified": "2025-04-01",
+                            "icon": "💻"
+                        },
+                        {
+                            "name": "Tetris",
+                            "filename": "Tetris.3.9.5.html",
+                            "description": "",
+                            "lastModified": "2024-03-09",
+                            "icon": "📊"
+                        }
+                    ]
+                },
+                {
+                    "name": "Support",
+                    "description": "Support resources",
+                    "files": [
+                        {
+                            "name": "Doc1",
+                            "filename": "h01.html",
+                            "description": "",
+                            "lastModified": "2024-01-11",
+                            "icon": "📚"
+                        },
+                        {
+                            "name": "Doc2",
+                            "filename": "h01.html",
+                            "description": "",
+                            "lastModified": "2024-01-09",
+                            "icon": "❓"
+                        },
+                        {
+                            "name": "Doc3",
+                            "filename": "h01.html",
+                            "description": "",
+                            "lastModified": "2024-01-08",
+                            "icon": "📞"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // Function to render categories and files
+        function renderFiles(data, searchTerm = '') {
+            const container = document.getElementById('categoriesContainer');
+            let totalFiles = 0;
+            let html = '';
+
+            data.categories.forEach(category => {
+                // Filter files based on search term
+                const filteredFiles = category.files.filter(file => 
+                    file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    file.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    file.filename.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                if (filteredFiles.length === 0 && searchTerm) {
+                    return; // Skip empty categories during search
+                }
+
+                totalFiles += filteredFiles.length;
+
+                html += `
+                    <div class="category-section">
+                        <h2 class="category-header">
+                            ${category.name}
+                            <span class="category-count">${filteredFiles.length}</span>
+                        </h2>
+                        <ul class="file-list">
+                            ${filteredFiles.length > 0 ? 
+                                filteredFiles.map(file => `
+                                    <li class="file-item">
+                                        <div style="flex-grow: 1;">
+                                            <a href="${file.filename}" class="file-link">
+                                                ${file.icon || '📄'} ${file.name}
+                                            </a>
+                                            <div class="file-description">${file.description}</div>
+                                        </div>
+                                        <div class="file-meta">
+                                            <span class="file-date">${file.lastModified}</span>
+                                        </div>
+                                    </li>
+                                `).join('') : 
+                                `<li class="no-results">No files in this category</li>`
+                            }
+                        </ul>
+                        ${category.description && !searchTerm ? 
+                            `<div style="padding: 10px 20px; background: #f8f9fa; color: #6c757d; font-size: 0.9em;">
+                                ${category.description}
+                            </div>` : ''
+                        }
+                    </div>
+                `;
+            });
+
+            // Show no results message if searching
+            if (searchTerm && totalFiles === 0) {
+                html = `<div class="no-results">No files found matching "${searchTerm}"</div>`;
+            }
+
+            container.innerHTML = html;
+            document.getElementById('totalFiles').textContent = totalFiles;
+        }
+
+        // Search functionality
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            let searchTimeout;
+
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    renderFiles(linksData, e.target.value.trim());
+                }, 300);
+            });
+
+            // Clear search on Escape key
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    renderFiles(linksData);
+                }
+            });
+        }
+
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFiles(linksData);
+            setupSearch();
+        });
+
+        // Optional: Add keyboard shortcut for search (Ctrl+K or Cmd+K)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+        });
+    </script>
+</body>
+</html>
