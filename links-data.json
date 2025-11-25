@@ -1,1 +1,100 @@
-
+{
+    "lastUpdated": "2024-01-15",
+    "version": "1.0.0",
+    "categories": [
+        {
+            "name": "Main Pages",
+            "description": "Primary navigation pages",
+            "files": [
+                {
+                    "name": "Home",
+                    "filename": "index.html",
+                    "description": "Main index page",
+                    "lastModified": "2024-01-15",
+                    "icon": "🏠"
+                },
+                {
+                    "name": "About Us",
+                    "filename": "about.html",
+                    "description": "Learn more about our company",
+                    "lastModified": "2024-01-14",
+                    "icon": "👥"
+                }
+            ]
+        },
+        {
+            "name": "Services",
+            "description": "Our service offerings",
+            "files": [
+                {
+                    "name": "Web Development",
+                    "filename": "services-web.html",
+                    "description": "Custom web development services",
+                    "lastModified": "2024-01-13",
+                    "icon": "💻"
+                },
+                {
+                    "name": "Consulting",
+                    "filename": "services-consulting.html",
+                    "description": "Professional consulting services",
+                    "lastModified": "2024-01-12",
+                    "icon": "📊"
+                },
+                {
+                    "name": "Support",
+                    "filename": "services-support.html",
+                    "description": "Technical support and maintenance",
+                    "lastModified": "2024-01-10",
+                    "icon": "🔧"
+                }
+            ]
+        },
+        {
+            "name": "Resources",
+            "description": "Helpful resources and documentation",
+            "files": [
+                {
+                    "name": "Documentation",
+                    "filename": "docs.html",
+                    "description": "Complete product documentation",
+                    "lastModified": "2024-01-11",
+                    "icon": "📚"
+                },
+                {
+                    "name": "FAQ",
+                    "filename": "faq.html",
+                    "description": "Frequently asked questions",
+                    "lastModified": "2024-01-09",
+                    "icon": "❓"
+                },
+                {
+                    "name": "Contact",
+                    "filename": "contact.html",
+                    "description": "Get in touch with us",
+                    "lastModified": "2024-01-08",
+                    "icon": "📞"
+                }
+            ]
+        },
+        {
+            "name": "Projects",
+            "description": "Our portfolio and case studies",
+            "files": [
+                {
+                    "name": "Portfolio",
+                    "filename": "portfolio.html",
+                    "description": "View our work portfolio",
+                    "lastModified": "2024-01-07",
+                    "icon": "🎨"
+                },
+                {
+                    "name": "Case Studies",
+                    "filename": "case-studies.html",
+                    "description": "Detailed project case studies",
+                    "lastModified": "2024-01-06",
+                    "icon": "📋"
+                }
+            ]
+        }
+    ]
+}
