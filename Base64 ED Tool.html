@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder/Decoder Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .tab {
+            display: none;
+        }
+        .tab.active {
+            display: block;
+        }
+        .tab-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Base64 Encoder/Decoder Tool</h1>
+    
+    <div class="tab-buttons">
+        <button class="tab-button active" onclick="openTab('encode')">Encode to Base64</button>
+        <button class="tab-button" onclick="openTab('decode')">Decode from Base64</button>
+    </div>
+    
+    <div class="container">
+        <div id="encode" class="tab active">
+            <h2>Text to Base64</h2>
+            <textarea id="textToEncode" placeholder="Enter text to encode to Base64..."></textarea>
+            <div class="button-group">
+                <button onclick="encodeToBase64()">Encode</button>
+                <button onclick="copyResult('encodedResult')">Copy</button>
+                <button onclick="clearText('textToEncode', 'encodedResult')">Clear</button>
+            </div>
+            <h3>Base64 Result:</h3>
+            <textarea id="encodedResult" readonly placeholder="Base64 result will appear here..."></textarea>
+        </div>
+        
+        <div id="decode" class="tab">
+            <h2>Base64 to Text</h2>
+            <textarea id="textToDecode" placeholder="Enter Base64 to decode to text..."></textarea>
+            <div class="button-group">
+                <button onclick="decodeFromBase64()">Decode</button>
+                <button onclick="copyResult('decodedResult')">Copy</button>
+                <button onclick="clearText('textToDecode', 'decodedResult')">Clear</button>
+            </div>
+            <h3>Decoded Text:</h3>
+            <textarea id="decodedResult" readonly placeholder="Decoded text will appear here..."></textarea>
+        </div>
+    </div>
+    
+    <script>
+        function encodeToBase64() {
+            const text = document.getElementById('textToEncode').value;
+            const encoded = btoa(unescape(encodeURIComponent(text)));
+            document.getElementById('encodedResult').value = encoded;
+        }
+        
+        function decodeFromBase64() {
+            const base64 = document.getElementById('textToDecode').value;
+            try {
+                const decoded = decodeURIComponent(escape(atob(base64)));
+                document.getElementById('decodedResult').value = decoded;
+            } catch (e) {
+                document.getElementById('decodedResult').value = "Error: Invalid Base64 input";
+            }
+        }
+        
+        function copyResult(id) {
+            const result = document.getElementById(id);
+            result.select();
+            document.execCommand('copy');
+            alert("Copied to clipboard!");
+        }
+        
+        function clearText(inputId, resultId) {
+            document.getElementById(inputId).value = '';
+            document.getElementById(resultId).value = '';
+        }
+        
+        function openTab(tabName) {
+            // Hide all tabs
+            const tabs = document.getElementsByClassName('tab');
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            
+            // Remove active class from all buttons
+            const buttons = document.getElementsByClassName('tab-button');
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove('active');
+            }
+            
+            // Show the selected tab and mark button as active
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>
