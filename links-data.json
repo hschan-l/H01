@@ -71,7 +71,8 @@
                             "name": "Base64 16BE ED Tool",
                             "filename": "Base64 16BE ED Tool.html",
                             "description": "",
-                            "lastModified": "2025-12-30",   },
+                            "lastModified": "2025-12-30", 
+                                    "icon": "❓" },
             
                             "name": "Base64 ED Tool",
                             "filename": "Base64 ED Tool.html",
