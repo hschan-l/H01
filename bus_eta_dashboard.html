@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Bus ETA Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 0.9rem; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: #1e293b;
+            padding: 6px;
+            border-radius: 12px;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            background: transparent;
+            color: #94a3b8;
+        }
+        .tab.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        /* Search Panel */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .search-box {
+            background: #1e293b;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        .search-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .input-group {
+            flex: 1;
+            min-width: 140px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        .btn-secondary:hover { background: #475569; }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover { background: #059669; }
+        .btn-group { display: flex; gap: 8px; margin-top: 16px; }
+
+        /* Route List */
+        .route-list {
+            display: grid;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .route-item {
+            background: #1e293b;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .route-item:hover {
+            border-color: #3b82f6;
+            background: #1e293b;
+            transform: translateX(4px);
+        }
+        .route-item.selected {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .route-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .route-info { flex: 1; margin-left: 14px; }
+        .route-name { font-weight: 600; color: #e2e8f0; font-size: 0.95rem; }
+        .route-dest { color: #94a3b8; font-size: 0.85rem; margin-top: 2px; }
+        .route-dir {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: #334155;
+            color: #cbd5e1;
+        }
+
+        /* Stops Timeline */
+        .stops-timeline {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #334155;
+        }
+        .stops-timeline h3 {
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+            color: #e2e8f0;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 28px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #334155;
+        }
+        .stop-node {
+            position: relative;
+            padding: 12px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .stop-node::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 18px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #334155;
+            border: 2px solid #475569;
+            transition: all 0.2s;
+        }
+        .stop-node:hover::before {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+        .stop-node.current::before {
+            background: #10b981;
+            border-color: #34d399;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+        }
+        .stop-node.next::before {
+            background: #f59e0b;
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.1); }
+        }
+        .stop-name { font-weight: 500; font-size: 0.95rem; }
+        .stop-id { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+        .stop-eta {
+            margin-top: 6px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .eta-tag {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .eta-tag.arriving {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+        .eta-tag.soon {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+        .eta-tag.later {
+            background: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+        }
+        .eta-tag.scheduled {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        /* ETA Cards */
+        .eta-cards {
+            display: grid;
+            gap: 12px;
+        }
+        .eta-card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            transition: all 0.2s;
+        }
+        .eta-card:hover { border-color: #3b82f6; }
+        .eta-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .eta-card-route {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .eta-card-route .badge {
+            background: #3b82f6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .eta-card-route .dest { font-weight: 600; }
+        .eta-card-route .dir {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .eta-times {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .eta-time-item {
+            background: #0f172a;
+            padding: 10px 16px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 80px;
+            border: 1px solid #334155;
+        }
+        .eta-time-item.arriving { border-color: #10b981; }
+        .eta-time-item.soon { border-color: #f59e0b; }
+        .eta-time-min {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+        .eta-time-min.arriving { color: #34d399; }
+        .eta-time-min.soon { color: #fbbf24; }
+        .eta-time-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .eta-remark {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #334155;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Error */
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+
+        /* Info bar */
+        .info-bar {
+            background: #1e293b;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-bar .highlight { color: #60a5fa; font-weight: 600; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5rem; }
+            .search-row { flex-direction: column; }
+            .input-group { min-width: 100%; }
+            .btn-group { flex-wrap: wrap; }
+        }
+
+        .hidden { display: none !important; }
+
+        /* Section title */
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚌 HK Bus ETA Dashboard</h1>
+        <p class="subtitle">Real-time bus arrival info for KMB & Citybus</p>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="kmb">KMB 九巴</button>
+            <button class="tab" data-tab="ctb">Citybus 城巴</button>
+        </div>
+
+        <!-- KMB Panel -->
+        <div class="panel active" id="panel-kmb">
+            <div class="search-box">
+                <div class="search-row">
+                    <div class="input-group">
+                        <label>Route Number</label>
+                        <input type="text" id="kmb-route-input" placeholder="e.g. 40, 1A, 74B" maxlength="10">
+                    </div>
+                    <div class="input-group">
+                        <label>Direction</label>
+                        <select id="kmb-direction">
+                            <option value="outbound">Outbound (O)</option>
+                            <option value="inbound">Inbound (I)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Service Type</label>
+                        <input type="text" id="kmb-service" placeholder="1" value="1" maxlength="3">
+                    </div>
+                    <button class="btn btn-primary" onclick="kmbSearchRoute()">
+                        🔍 Search Route
+                    </button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="kmbLoadAllRoutes()">📋 All Routes</button>
+                    <button class="btn btn-success" onclick="kmbGetETA()">⏱️ Get ETA</button>
+                    <button class="btn btn-secondary" onclick="kmbClear()">Clear</button>
+                </div>
+            </div>
+
+            <div id="kmb-info" class="info-bar hidden"></div>
+            <div id="kmb-loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+            </div>
+            <div id="kmb-error" class="error-box hidden"></div>
+
+            <div id="kmb-results">
+                <div id="kmb-route-list-section" class="hidden">
+                    <div class="section-title">Routes</div>
+                    <div id="kmb-route-list" class="route-list"></div>
+                </div>
+                <div id="kmb-stops-section" class="hidden" style="margin-top: 20px;">
+                    <div class="section-title">Route Stops & ETA</div>
+                    <div id="kmb-stops" class="stops-timeline"></div>
+                </div>
+                <div id="kmb-eta-section" class="hidden" style="margin-top: 20px;">
+                    <div class="section-title">ETA by Stop</div>
+                    <div id="kmb-eta-cards" class="eta-cards"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Citybus Panel -->
+        <div class="panel" id="panel-ctb">
+            <div class="search-box">
+                <div class="search-row">
+                    <div class="input-group">
+                        <label>Route Number</label>
+                        <input type="text" id="ctb-route-input" placeholder="e.g. 1, 107, 11" maxlength="10">
+                    </div>
+                    <div class="input-group">
+                        <label>Direction</label>
+                        <select id="ctb-direction">
+                            <option value="outbound">Outbound (O)</option>
+                            <option value="inbound">Inbound (I)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Stop ID (6-digit)</label>
+                        <input type="text" id="ctb-stop-id" placeholder="e.g. 001145" maxlength="6">
+                    </div>
+                    <button class="btn btn-primary" onclick="ctbSearchRoute()">
+                        🔍 Search Route
+                    </button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="ctbLoadAllRoutes()">📋 All Routes</button>
+                    <button class="btn btn-success" onclick="ctbGetETA()">⏱️ Get ETA</button>
+                    <button class="btn btn-secondary" onclick="ctbClear()">Clear</button>
+                </div>
+            </div>
+
+            <div id="ctb-info" class="info-bar hidden"></div>
+            <div id="ctb-loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+            </div>
+            <div id="ctb-error" class="error-box hidden"></div>
+
+            <div id="ctb-results">
+                <div id="ctb-route-list-section" class="hidden">
+                    <div class="section-title">Routes</div>
+                    <div id="ctb-route-list" class="route-list"></div>
+                </div>
+                <div id="ctb-stops-section" class="hidden" style="margin-top: 20px;">
+                    <div class="section-title">Route Stops & ETA</div>
+                    <div id="ctb-stops" class="stops-timeline"></div>
+                </div>
+                <div id="ctb-eta-section" class="hidden" style="margin-top: 20px;">
+                    <div class="section-title">ETA by Stop</div>
+                    <div id="ctb-eta-cards" class="eta-cards"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====== KMB API ======
+        const KMB_BASE = 'https://data.etabus.gov.hk/v1/transport/kmb';
+        let kmbRoutes = [];
+        let kmbSelectedRoute = null;
+        let kmbStopsData = [];
+        let kmbStopDetails = {};
+
+        async function kmbFetch(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            return res.json();
+        }
+
+        function kmbShowLoading(show) {
+            document.getElementById('kmb-loading').classList.toggle('hidden', !show);
+        }
+        function kmbShowError(msg) {
+            const el = document.getElementById('kmb-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+        function kmbHideError() {
+            document.getElementById('kmb-error').classList.add('hidden');
+        }
+        function kmbSetInfo(html) {
+            const el = document.getElementById('kmb-info');
+            el.innerHTML = html;
+            el.classList.remove('hidden');
+        }
+
+        async function kmbLoadAllRoutes() {
+            kmbClear();
+            kmbShowLoading(true);
+            kmbHideError();
+            try {
+                const data = await kmbFetch(`${KMB_BASE}/route/`);
+                kmbRoutes = data.data || [];
+                kmbRenderRouteList(kmbRoutes);
+                kmbSetInfo(`Found <span class="highlight">${kmbRoutes.length}</span> KMB routes`);
+            } catch (e) {
+                kmbShowError('Failed to load routes: ' + e.message);
+            } finally {
+                kmbShowLoading(false);
+            }
+        }
+
+        async function kmbSearchRoute() {
+            const route = document.getElementById('kmb-route-input').value.trim().toUpperCase();
+            const direction = document.getElementById('kmb-direction').value;
+            const serviceType = document.getElementById('kmb-service').value.trim() || '1';
+            if (!route) { kmbShowError('Please enter a route number'); return; }
+
+            kmbClear();
+            kmbShowLoading(true);
+            kmbHideError();
+
+            try {
+                // Get route info
+                const routeData = await kmbFetch(`${KMB_BASE}/route/${route}/${direction}/${serviceType}`);
+                if (!routeData.data) throw new Error('Route not found');
+                kmbSelectedRoute = routeData.data;
+
+                // Get stops for this route
+                const stopsData = await kmbFetch(`${KMB_BASE}/route-stop/${route}/${direction}/${serviceType}`);
+                kmbStopsData = stopsData.data || [];
+
+                // Fetch stop details
+                kmbStopDetails = {};
+                const stopPromises = kmbStopsData.map(async s => {
+                    try {
+                        const stopInfo = await kmbFetch(`${KMB_BASE}/stop/${s.stop}`);
+                        kmbStopDetails[s.stop] = stopInfo.data;
+                    } catch (e) { kmbStopDetails[s.stop] = { name_en: s.stop, name_tc: s.stop }; }
+                });
+                await Promise.all(stopPromises);
+
+                // Fetch ETA for all stops
+                const etaPromises = kmbStopsData.map(async s => {
+                    try {
+                        const etaData = await kmbFetch(`${KMB_BASE}/eta/${s.stop}/${route}/${serviceType}`);
+                        s.etaData = etaData.data || [];
+                    } catch (e) { s.etaData = []; }
+                });
+                await Promise.all(etaPromises);
+
+                kmbRenderStopsTimeline();
+                kmbSetInfo(`Route <span class="highlight">${route}</span> (${direction}) — ${kmbStopsData.length} stops`);
+            } catch (e) {
+                kmbShowError('Error: ' + e.message);
+            } finally {
+                kmbShowLoading(false);
+            }
+        }
+
+        async function kmbGetETA() {
+            const route = document.getElementById('kmb-route-input').value.trim().toUpperCase();
+            const serviceType = document.getElementById('kmb-service').value.trim() || '1';
+            if (!route) { kmbShowError('Please enter a route number'); return; }
+
+            kmbShowLoading(true);
+            kmbHideError();
+            try {
+                const data = await kmbFetch(`${KMB_BASE}/route-eta/${route}/${serviceType}`);
+                kmbRenderETACards(data.data || [], 'kmb');
+                kmbSetInfo(`ETA for Route <span class="highlight">${route}</span> — ${(data.data || []).length} entries`);
+            } catch (e) {
+                kmbShowError('Failed to get ETA: ' + e.message);
+            } finally {
+                kmbShowLoading(false);
+            }
+        }
+
+        function kmbRenderRouteList(routes) {
+            const container = document.getElementById('kmb-route-list');
+            container.innerHTML = '';
+            routes.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'route-item';
+                div.innerHTML = `
+                    <span class="route-badge">${r.route}</span>
+                    <div class="route-info">
+                        <div class="route-name">${r.orig_en} → ${r.dest_en}</div>
+                        <div class="route-dest">${r.orig_tc} → ${r.dest_tc}</div>
+                    </div>
+                    <span class="route-dir">${r.bound === 'O' ? 'Outbound' : 'Inbound'}</span>
+                `;
+                div.onclick = () => {
+                    document.getElementById('kmb-route-input').value = r.route;
+                    document.getElementById('kmb-direction').value = r.bound === 'O' ? 'outbound' : 'inbound';
+                    document.getElementById('kmb-service').value = r.service_type;
+                    kmbSearchRoute();
+                };
+                container.appendChild(div);
+            });
+            document.getElementById('kmb-route-list-section').classList.remove('hidden');
+        }
+
+        function kmbRenderStopsTimeline() {
+            const container = document.getElementById('kmb-stops');
+            container.innerHTML = `<h3>${kmbSelectedRoute.orig_en} → ${kmbSelectedRoute.dest_en}</h3>
+                <div class="timeline" id="kmb-timeline"></div>`;
+            const timeline = document.getElementById('kmb-timeline');
+
+            kmbStopsData.forEach((stop, idx) => {
+                const detail = kmbStopDetails[stop.stop] || {};
+                const node = document.createElement('div');
+                node.className = 'stop-node';
+                if (idx === 0) node.classList.add('current');
+                else if (idx === 1) node.classList.add('next');
+
+                const etaHtml = stop.etaData && stop.etaData.length > 0
+                    ? `<div class="stop-eta">${stop.etaData.map(eta => {
+                        const min = eta.eta ? Math.round((new Date(eta.eta) - new Date()) / 60000) : null;
+                        let cls = 'later', text = 'No ETA';
+                        if (min !== null && min >= 0) {
+                            if (min <= 1) { cls = 'arriving'; text = 'Arriving'; }
+                            else if (min <= 5) { cls = 'soon'; text = `${min} min`; }
+                            else { cls = 'later'; text = `${min} min`; }
+                        }
+                        if (eta.rmk_en) text += ` · ${eta.rmk_en}`;
+                        return `<span class="eta-tag ${cls}">${text}</span>`;
+                    }).join('')}</div>`
+                    : '';
+
+                node.innerHTML = `
+                    <div class="stop-name">${detail.name_en || stop.stop} <span style="color:#64748b">(${detail.name_tc || ''})</span></div>
+                    <div class="stop-id">Stop ID: ${stop.stop} | Seq: ${stop.seq}</div>
+                    ${etaHtml}
+                `;
+                node.onclick = () => {
+                    document.querySelectorAll('#kmb-timeline .stop-node').forEach(n => n.classList.remove('current'));
+                    node.classList.add('current');
+                };
+                timeline.appendChild(node);
+            });
+            document.getElementById('kmb-stops-section').classList.remove('hidden');
+        }
+
+        function kmbRenderETACards(etas, prefix) {
+            const container = document.getElementById(`${prefix}-eta-cards`);
+            container.innerHTML = '';
+
+            // Group by stop
+            const byStop = {};
+            etas.forEach(eta => {
+                if (!byStop[eta.stop]) byStop[eta.stop] = [];
+                byStop[eta.stop].push(eta);
+            });
+
+            Object.entries(byStop).forEach(([stopId, stopEtas]) => {
+                const first = stopEtas[0];
+                const card = document.createElement('div');
+                card.className = 'eta-card';
+
+                const timesHtml = stopEtas.slice(0, 3).map(eta => {
+                    const min = eta.eta ? Math.round((new Date(eta.eta) - new Date()) / 60000) : null;
+                    let cls = 'later', minText = '--';
+                    if (min !== null && min >= 0) {
+                        if (min <= 1) { cls = 'arriving'; minText = 'Arr'; }
+                        else if (min <= 5) { cls = 'soon'; minText = `${min}m`; }
+                        else { cls = 'later'; minText = `${min}m`; }
+                    }
+                    return `
+                        <div class="eta-time-item ${cls}">
+                            <div class="eta-time-min ${cls}">${minText}</div>
+                            <div class="eta-time-label">${eta.eta ? new Date(eta.eta).toLocaleTimeString('en-HK', {hour:'2-digit', minute:'2-digit'}) : '--:--'}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="eta-card-header">
+                        <div class="eta-card-route">
+                            <span class="badge">${first.route}</span>
+                            <span class="dest">${first.dest_en}</span>
+                            <span class="dir">${first.dir === 'O' ? 'Outbound' : 'Inbound'} · Stop ${first.seq}</span>
+                        </div>
+                    </div>
+                    <div class="eta-times">${timesHtml}</div>
+                    ${first.rmk_en ? `<div class="eta-remark">${first.rmk_en}</div>` : ''}
+                `;
+                container.appendChild(card);
+            });
+            document.getElementById(`${prefix}-eta-section`).classList.remove('hidden');
+        }
+
+        function kmbClear() {
+            document.getElementById('kmb-route-list').innerHTML = '';
+            document.getElementById('kmb-stops').innerHTML = '';
+            document.getElementById('kmb-eta-cards').innerHTML = '';
+            document.getElementById('kmb-route-list-section').classList.add('hidden');
+            document.getElementById('kmb-stops-section').classList.add('hidden');
+            document.getElementById('kmb-eta-section').classList.add('hidden');
+            document.getElementById('kmb-info').classList.add('hidden');
+            kmbHideError();
+        }
+
+        // ====== Citybus API ======
+        const CTB_BASE = 'https://rt.data.gov.hk/v2/transport/citybus';
+        let ctbRoutes = [];
+        let ctbSelectedRoute = null;
+        let ctbStopsData = [];
+        let ctbStopDetails = {};
+
+        async function ctbFetch(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            return res.json();
+        }
+
+        function ctbShowLoading(show) {
+            document.getElementById('ctb-loading').classList.toggle('hidden', !show);
+        }
+        function ctbShowError(msg) {
+            const el = document.getElementById('ctb-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+        function ctbHideError() {
+            document.getElementById('ctb-error').classList.add('hidden');
+        }
+        function ctbSetInfo(html) {
+            const el = document.getElementById('ctb-info');
+            el.innerHTML = html;
+            el.classList.remove('hidden');
+        }
+
+        async function ctbLoadAllRoutes() {
+            ctbClear();
+            ctbShowLoading(true);
+            ctbHideError();
+            try {
+                const data = await ctbFetch(`${CTB_BASE}/route/CTB`);
+                ctbRoutes = data.data || [];
+                ctbRenderRouteList(ctbRoutes);
+                ctbSetInfo(`Found <span class="highlight">${ctbRoutes.length}</span> Citybus routes`);
+            } catch (e) {
+                ctbShowError('Failed to load routes: ' + e.message);
+            } finally {
+                ctbShowLoading(false);
+            }
+        }
+
+        async function ctbSearchRoute() {
+            const route = document.getElementById('ctb-route-input').value.trim();
+            const direction = document.getElementById('ctb-direction').value;
+            if (!route) { ctbShowError('Please enter a route number'); return; }
+
+            ctbClear();
+            ctbShowLoading(true);
+            ctbHideError();
+
+            try {
+                // Get route info
+                const routeData = await ctbFetch(`${CTB_BASE}/route/CTB/${route}`);
+                if (!routeData.data) throw new Error('Route not found');
+                ctbSelectedRoute = routeData.data;
+
+                // Get stops for this route
+                const stopsData = await ctbFetch(`${CTB_BASE}/route-stop/CTB/${route}/${direction}`);
+                ctbStopsData = stopsData.data || [];
+
+                // Fetch stop details
+                ctbStopDetails = {};
+                const stopPromises = ctbStopsData.map(async s => {
+                    try {
+                        const stopInfo = await ctbFetch(`${CTB_BASE}/stop/${s.stop}`);
+                        ctbStopDetails[s.stop] = stopInfo.data;
+                    } catch (e) { ctbStopDetails[s.stop] = { name_en: s.stop, name_tc: s.stop }; }
+                });
+                await Promise.all(stopPromises);
+
+                // Fetch ETA for all stops
+                const etaPromises = ctbStopsData.map(async s => {
+                    try {
+                        const etaData = await ctbFetch(`${CTB_BASE}/eta/CTB/${s.stop}/${route}`);
+                        s.etaData = etaData.data || [];
+                    } catch (e) { s.etaData = []; }
+                });
+                await Promise.all(etaPromises);
+
+                ctbRenderStopsTimeline();
+                ctbSetInfo(`Route <span class="highlight">${route}</span> (${direction}) — ${ctbStopsData.length} stops`);
+            } catch (e) {
+                ctbShowError('Error: ' + e.message);
+            } finally {
+                ctbShowLoading(false);
+            }
+        }
+
+        async function ctbGetETA() {
+            const route = document.getElementById('ctb-route-input').value.trim();
+            const stopId = document.getElementById('ctb-stop-id').value.trim();
+            if (!route) { ctbShowError('Please enter a route number'); return; }
+
+            ctbShowLoading(true);
+            ctbHideError();
+            try {
+                let etas = [];
+                if (stopId) {
+                    const data = await ctbFetch(`${CTB_BASE}/eta/CTB/${stopId}/${route}`);
+                    etas = data.data || [];
+                } else {
+                    const data = await ctbFetch(`${CTB_BASE}/route-stop/CTB/${route}/outbound`);
+                    const stops = data.data || [];
+                    for (const s of stops.slice(0, 5)) {
+                        try {
+                            const etaData = await ctbFetch(`${CTB_BASE}/eta/CTB/${s.stop}/${route}`);
+                            etas.push(...(etaData.data || []));
+                        } catch (e) {}
+                    }
+                }
+                ctbRenderETACards(etas, 'ctb');
+                ctbSetInfo(`ETA for Route <span class="highlight">${route}</span> — ${etas.length} entries`);
+            } catch (e) {
+                ctbShowError('Failed to get ETA: ' + e.message);
+            } finally {
+                ctbShowLoading(false);
+            }
+        }
+
+        function ctbRenderRouteList(routes) {
+            const container = document.getElementById('ctb-route-list');
+            container.innerHTML = '';
+            routes.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'route-item';
+                div.innerHTML = `
+                    <span class="route-badge">${r.route}</span>
+                    <div class="route-info">
+                        <div class="route-name">${r.orig_en} → ${r.dest_en}</div>
+                        <div class="route-dest">${r.orig_tc} → ${r.dest_tc}</div>
+                    </div>
+                `;
+                div.onclick = () => {
+                    document.getElementById('ctb-route-input').value = r.route;
+                    ctbSearchRoute();
+                };
+                container.appendChild(div);
+            });
+            document.getElementById('ctb-route-list-section').classList.remove('hidden');
+        }
+
+        function ctbRenderStopsTimeline() {
+            const container = document.getElementById('ctb-stops');
+            container.innerHTML = `<h3>${ctbSelectedRoute.orig_en} → ${ctbSelectedRoute.dest_en}</h3>
+                <div class="timeline" id="ctb-timeline"></div>`;
+            const timeline = document.getElementById('ctb-timeline');
+
+            ctbStopsData.forEach((stop, idx) => {
+                const detail = ctbStopDetails[stop.stop] || {};
+                const node = document.createElement('div');
+                node.className = 'stop-node';
+                if (idx === 0) node.classList.add('current');
+                else if (idx === 1) node.classList.add('next');
+
+                const etaHtml = stop.etaData && stop.etaData.length > 0
+                    ? `<div class="stop-eta">${stop.etaData.map(eta => {
+                        const min = eta.eta ? Math.round((new Date(eta.eta) - new Date()) / 60000) : null;
+                        let cls = 'later', text = 'No ETA';
+                        if (min !== null && min >= 0) {
+                            if (min <= 1) { cls = 'arriving'; text = 'Arriving'; }
+                            else if (min <= 5) { cls = 'soon'; text = `${min} min`; }
+                            else { cls = 'later'; text = `${min} min`; }
+                        }
+                        if (eta.rmk_en) text += ` · ${eta.rmk_en}`;
+                        return `<span class="eta-tag ${cls}">${text}</span>`;
+                    }).join('')}</div>`
+                    : '';
+
+                node.innerHTML = `
+                    <div class="stop-name">${detail.name_en || stop.stop} <span style="color:#64748b">(${detail.name_tc || ''})</span></div>
+                    <div class="stop-id">Stop ID: ${stop.stop} | Seq: ${stop.seq}</div>
+                    ${etaHtml}
+                `;
+                node.onclick = () => {
+                    document.querySelectorAll('#ctb-timeline .stop-node').forEach(n => n.classList.remove('current'));
+                    node.classList.add('current');
+                    document.getElementById('ctb-stop-id').value = stop.stop;
+                };
+                timeline.appendChild(node);
+            });
+            document.getElementById('ctb-stops-section').classList.remove('hidden');
+        }
+
+        function ctbRenderETACards(etas, prefix) {
+            const container = document.getElementById(`${prefix}-eta-cards`);
+            container.innerHTML = '';
+
+            const byStop = {};
+            etas.forEach(eta => {
+                if (!byStop[eta.stop]) byStop[eta.stop] = [];
+                byStop[eta.stop].push(eta);
+            });
+
+            Object.entries(byStop).forEach(([stopId, stopEtas]) => {
+                const first = stopEtas[0];
+                const card = document.createElement('div');
+                card.className = 'eta-card';
+
+                const timesHtml = stopEtas.slice(0, 3).map(eta => {
+                    const min = eta.eta ? Math.round((new Date(eta.eta) - new Date()) / 60000) : null;
+                    let cls = 'later', minText = '--';
+                    if (min !== null && min >= 0) {
+                        if (min <= 1) { cls = 'arriving'; minText = 'Arr'; }
+                        else if (min <= 5) { cls = 'soon'; minText = `${min}m`; }
+                        else { cls = 'later'; minText = `${min}m`; }
+                    }
+                    return `
+                        <div class="eta-time-item ${cls}">
+                            <div class="eta-time-min ${cls}">${minText}</div>
+                            <div class="eta-time-label">${eta.eta ? new Date(eta.eta).toLocaleTimeString('en-HK', {hour:'2-digit', minute:'2-digit'}) : '--:--'}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="eta-card-header">
+                        <div class="eta-card-route">
+                            <span class="badge">${first.route}</span>
+                            <span class="dest">${first.dest_en}</span>
+                            <span class="dir">${first.dir === 'O' ? 'Outbound' : 'Inbound'} · Stop ${first.seq}</span>
+                        </div>
+                    </div>
+                    <div class="eta-times">${timesHtml}</div>
+                    ${first.rmk_en ? `<div class="eta-remark">${first.rmk_en}</div>` : ''}
+                `;
+                container.appendChild(card);
+            });
+            document.getElementById(`${prefix}-eta-section`).classList.remove('hidden');
+        }
+
+        function ctbClear() {
+            document.getElementById('ctb-route-list').innerHTML = '';
+            document.getElementById('ctb-stops').innerHTML = '';
+            document.getElementById('ctb-eta-cards').innerHTML = '';
+            document.getElementById('ctb-route-list-section').classList.add('hidden');
+            document.getElementById('ctb-stops-section').classList.add('hidden');
+            document.getElementById('ctb-eta-section').classList.add('hidden');
+            document.getElementById('ctb-info').classList.add('hidden');
+            ctbHideError();
+        }
+
+        // ====== Tab Switching ======
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+            });
+        });
+
+        // Enter key support
+        document.getElementById('kmb-route-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') kmbSearchRoute();
+        });
+        document.getElementById('ctb-route-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') ctbSearchRoute();
+        });
+    </script>
+</body>
+</html>
