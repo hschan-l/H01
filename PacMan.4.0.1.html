@@ -264,12 +264,12 @@ function initializeGame() {
     ghosts.push(new Ghost(9, 9, 'red', 3.0));      // Fastest ghost
     ghosts.push(new Ghost(10, 9, 'pink', 2.8));    // Fast ghost
   } else if (currentMazeIndex === 1) {
-    pacman = new PacMan(1, 1);
+    pacman = new PacMan(0, 2);
     ghosts.push(new Ghost(9, 9, 'red', 3.0));      // Fastest ghost
     ghosts.push(new Ghost(10, 9, 'pink', 2.8));    // Fast ghost
     ghosts.push(new Ghost(9, 15, 'cyan', 2.6));    // Medium ghost
   } else {
-    pacman = new PacMan(1, 1);
+    pacman = new PacMan(9, 11);
     ghosts.push(new Ghost(9, 5, 'red', 3.0));      // Fastest ghost
     ghosts.push(new Ghost(10, 5, 'pink', 2.8));    // Fast ghost
     ghosts.push(new Ghost(9, 15, 'cyan', 2.6));    // Medium ghost
