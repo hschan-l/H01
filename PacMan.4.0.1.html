@@ -482,8 +482,8 @@ function resetPositions() {
     ghosts[1].y = 9 * cellSize + cellSize/2;
     ghosts[1].moving = false;
   } else if (currentMazeIndex === 1) {
-    pacman.gridX = 1;
-    pacman.gridY = 1;
+    pacman.gridX = 0;
+    pacman.gridY = 2;
     pacman.targetX = 1;
     pacman.targetY = 1;
     pacman.x = 1 * cellSize + cellSize/2;
@@ -514,8 +514,8 @@ function resetPositions() {
     ghosts[2].y = 15 * cellSize + cellSize/2;
     ghosts[2].moving = false;
   } else {
-    pacman.gridX = 1;
-    pacman.gridY = 1;
+    pacman.gridX = 9;
+    pacman.gridY = 11;
     pacman.targetX = 1;
     pacman.targetY = 1;
     pacman.x = 1 * cellSize + cellSize/2;
