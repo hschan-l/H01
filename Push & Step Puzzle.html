@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Push & Step Puzzle</title>
+    <style>
+        :root {
+            --bg-color: #8c5332;
+            --board-color: #d1a054;
+            --tile-color: #f2c078;
+            --tile-border: #e0ab62;
+        }
+
+        html, body {
+            overflow: auto;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            color: #fff;
+        }
+
+        header {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.3rem;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.4);
+        }
+
+        p {
+            margin: 2px 0 6px 0;
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        #game-container {
+            position: relative;
+            background-color: var(--board-color);
+            padding: 6px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            width: min(80vw, 300px);
+            height: min(80vw, 300px);
+            touch-action: none;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .cell {
+            background-color: var(--tile-color);
+            border: 2px solid var(--tile-border);
+            border-radius: 6px;
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .obstacle {
+            font-size: calc(min(80vw, 300px) / 10);
+            font-weight: bold;
+            color: #3d1e03;
+        }
+
+        .ring {
+            width: 80%;
+            height: 80%;
+            border: 4px solid #ffffff;
+            border-radius: 50%;
+            box-sizing: border-box;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ring::after {
+            content: '••';
+            color: #ffffff;
+            font-size: 10px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .ring.selected {
+            border-color: #ffe600;
+            box-shadow: 0 0 10px #ffe600;
+            transform: scale(1.1);
+        }
+
+        #message {
+            font-size: 1rem;
+            font-weight: bold;
+            height: 24px;
+            color: #ffe600;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        .controls-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        #dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 46px);
+            grid-template-rows: repeat(2, 46px);
+            gap: 4px;
+        }
+
+        .dbtn {
+            background-color: #3d1e03;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .dbtn:active {
+            background-color: #ffe600;
+            color: #000;
+        }
+
+        .dbtn-up { grid-column: 2; grid-row: 1; }
+        .dbtn-left { grid-column: 1; grid-row: 2; }
+        .dbtn-down { grid-column: 2; grid-row: 2; }
+        .dbtn-right { grid-column: 3; grid-row: 2; }
+
+        .btn-side-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .btn {
+            background-color: #5c2f06;
+            color: #fff;
+            border: none;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            background-color: #ffe600;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Push & Step Puzzle</h1>
+        <p>Align 3 rings to win. Don't align 3 crosses!</p>
+    </header>
+
+    <div id="game-container">
+        <div id="grid"></div>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="controls-wrapper">
+        <div id="dpad">
+            <button class="dbtn dbtn-up" onclick="moveSelectedRing(-1, 0)">▲</button>
+            <button class="dbtn dbtn-left" onclick="moveSelectedRing(0, -1)">◀</button>
+            <button class="dbtn dbtn-down" onclick="moveSelectedRing(1, 0)">▼</button>
+            <button class="dbtn dbtn-right" onclick="moveSelectedRing(0, 1)">▶</button>
+        </div>
+
+        <div class="btn-side-container">
+            <button class="btn" onclick="undoLastMove()">↩ Undo</button>
+            <button class="btn" onclick="resetCurrentLevel()">Reset</button>
+            <button class="btn" onclick="newRandomGame()">New</button>
+        </div>
+    </div>
+
+    <script>
+        const GRID_SIZE = 6;
+        const NUM_OBSTACLES = 10; // Increased cross count
+
+        let obstacles = [];
+        let rings = [];
+
+        let savedObstacles = [];
+        let savedRings = [];
+        let moveHistory = [];
+
+        let selectedRingIndex = null;
+        let isGameOver = false;
+
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        function newRandomGame() {
+            selectedRingIndex = null;
+            moveHistory = [];
+            isGameOver = false;
+            document.getElementById('message').innerText = '';
+            
+            // Generate Crosses ensuring no 3-in-a-row initially
+            while (true) {
+                obstacles = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+                let placedObstacles = 0;
+                while (placedObstacles < NUM_OBSTACLES) {
+                    let r = Math.floor(Math.random() * GRID_SIZE);
+                    let c = Math.floor(Math.random() * GRID_SIZE);
+                    if (obstacles[r][c] === 0) {
+                        obstacles[r][c] = 1;
+                        placedObstacles++;
+                    }
+                }
+                if (!checkThreeInALine(obstacles)) break;
+            }
+
+            // Generate Rings
+            generateRandomNonLineRings();
+
+            savedObstacles = JSON.parse(JSON.stringify(obstacles));
+            savedRings = JSON.parse(JSON.stringify(rings));
+
+            renderGrid();
+        }
+
+        function resetCurrentLevel() {
+            selectedRingIndex = null;
+            moveHistory = [];
+            isGameOver = false;
+            document.getElementById('message').innerText = '';
+            obstacles = JSON.parse(JSON.stringify(savedObstacles));
+            rings = JSON.parse(JSON.stringify(savedRings));
+            renderGrid();
+        }
+
+        function generateRandomNonLineRings() {
+            const emptyCells = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (obstacles[r][c] === 0) {
+                        emptyCells.push({ r, c });
+                    }
+                }
+            }
+
+            while (true) {
+                let shuffled = emptyCells.sort(() => 0.5 - Math.random());
+                let candidateRings = [shuffled[0], shuffled[1], shuffled[2]];
+
+                if (!isRingLineAlignment(candidateRings)) {
+                    rings = candidateRings;
+                    break;
+                }
+            }
+        }
+
+        // Checks if 3 items (rings) are aligned continuously
+        function isRingLineAlignment(testRings) {
+            if (testRings[0].r === testRings[1].r && testRings[1].r === testRings[2].r) {
+                let cols = testRings.map(p => p.c).sort((a, b) => a - b);
+                if (cols[2] - cols[1] === 1 && cols[1] - cols[0] === 1) return true;
+            }
+
+            if (testRings[0].c === testRings[1].c && testRings[1].c === testRings[2].c) {
+                let rows = testRings.map(p => p.r).sort((a, b) => a - b);
+                if (rows[2] - rows[1] === 1 && rows[1] - rows[0] === 1) return true;
+            }
+
+            let sorted = [...testRings].sort((a, b) => a.r - b.r || a.c - b.c);
+            let dr1 = sorted[1].r - sorted[0].r;
+            let dc1 = sorted[1].c - sorted[0].c;
+            let dr2 = sorted[2].r - sorted[1].r;
+            let dc2 = sorted[2].c - sorted[1].c;
+
+            if (Math.abs(dr1) === 1 && Math.abs(dc1) === 1 && dr1 === dr2 && dc1 === dc2) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // General function to check if 3 crosses exist in a line (horizontal, vertical, diagonal)
+        function checkThreeInALine(grid) {
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (grid[r][c] === 1) {
+                        // Horizontal (Right)
+                        if (c + 2 < GRID_SIZE && grid[r][c+1] === 1 && grid[r][c+2] === 1) return true;
+                        // Vertical (Down)
+                        if (r + 2 < GRID_SIZE && grid[r+1][c] === 1 && grid[r+2][c] === 1) return true;
+                        // Diagonal (Down-Right)
+                        if (r + 2 < GRID_SIZE && c + 2 < GRID_SIZE && grid[r+1][c+1] === 1 && grid[r+2][c+2] === 1) return true;
+                        // Diagonal (Down-Left)
+                        if (r + 2 < GRID_SIZE && c - 2 >= 0 && grid[r+1][c-1] === 1 && grid[r+2][c-2] === 1) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function renderGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+
+                    if (obstacles[r][c] === 1) {
+                        cell.classList.add('obstacle');
+                        cell.innerText = '✖';
+                    }
+
+                    const ringIndex = rings.findIndex(ring => ring.r === r && ring.c === c);
+                    if (ringIndex !== -1) {
+                        const ringEl = document.createElement('div');
+                        ringEl.classList.add('ring');
+                        if (ringIndex === selectedRingIndex) {
+                            ringEl.classList.add('selected');
+                        }
+                        ringEl.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (!isGameOver) selectRing(ringIndex);
+                        });
+                        cell.appendChild(ringEl);
+                    }
+
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function selectRing(index) {
+            selectedRingIndex = index;
+            renderGrid();
+        }
+
+        function saveStateToHistory() {
+            moveHistory.push({
+                obstacles: JSON.parse(JSON.stringify(obstacles)),
+                rings: JSON.parse(JSON.stringify(rings)),
+                selectedRingIndex: selectedRingIndex
+            });
+        }
+
+        function undoLastMove() {
+            if (moveHistory.length === 0) return;
+            const lastState = moveHistory.pop();
+            obstacles = lastState.obstacles;
+            rings = lastState.rings;
+            selectedRingIndex = lastState.selectedRingIndex;
+            isGameOver = false;
+            document.getElementById('message').innerText = '';
+            renderGrid();
+        }
+
+        function moveSelectedRing(dr, dc) {
+            if (selectedRingIndex === null || isGameOver) return;
+
+            let ring = rings[selectedRingIndex];
+            let targetR = ring.r + dr;
+            let targetC = ring.c + dc;
+
+            if (targetR < 0 || targetR >= GRID_SIZE || targetC < 0 || targetC >= GRID_SIZE) return;
+            if (rings.some(r => r.r === targetR && r.c === targetC)) return;
+
+            if (obstacles[targetR][targetC] === 1) {
+                let crossNextR = targetR + dr;
+                let crossNextC = targetC + dc;
+
+                let isCrossNextValid = 
+                    crossNextR >= 0 && crossNextR < GRID_SIZE &&
+                    crossNextC >= 0 && crossNextC < GRID_SIZE &&
+                    obstacles[crossNextR][crossNextC] === 0 &&
+                    !rings.some(r => r.r === crossNextR && r.c === crossNextC);
+
+                if (isCrossNextValid) {
+                    saveStateToHistory();
+                    obstacles[targetR][targetC] = 0;
+                    obstacles[crossNextR][crossNextC] = 1;
+                    ring.r = targetR;
+                    ring.c = targetC;
+                    renderGrid();
+                    evaluateGameState();
+                }
+            } else {
+                saveStateToHistory();
+                ring.r = targetR;
+                ring.c = targetC;
+                renderGrid();
+                evaluateGameState();
+            }
+        }
+
+        function evaluateGameState() {
+            // Check cross 3-in-a-line loss condition first
+            if (checkThreeInALine(obstacles)) {
+                isGameOver = true;
+                document.getElementById('message').innerText = '💥 3 Crosses in a line! You Lost!';
+                return;
+            }
+
+            // Check ring 3-in-a-line win condition
+            if (isRingLineAlignment(rings)) {
+                isGameOver = true;
+                document.getElementById('message').innerText = '🎉 Puzzle Solved!';
+            }
+        }
+
+        const gameContainer = document.getElementById('game-container');
+
+        gameContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        gameContainer.addEventListener('touchend', (e) => {
+            if (selectedRingIndex === null || isGameOver) return;
+
+            let touchEndX = e.changedTouches[0].clientX;
+            let touchEndY = e.changedTouches[0].clientY;
+
+            let diffX = touchEndX - touchStartX;
+            let diffY = touchEndY - touchStartY;
+
+            if (Math.max(Math.abs(diffX), Math.abs(diffY)) > 25) {
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    moveSelectedRing(0, diffX > 0 ? 1 : -1);
+                } else {
+                    moveSelectedRing(diffY > 0 ? 1 : -1, 0);
+                }
+            }
+        }, { passive: true });
+
+        newRandomGame();
+    </script>
+</body>
+  </html>
