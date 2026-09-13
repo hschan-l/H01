@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 Jigsaw Puzzle</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: var(--card-bg);
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            align-items: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        select, input[type="file"] {
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select:focus, input[type="file"]:focus {
+            border-color: var(--accent);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .file-upload-btn:hover {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        button.action-btn {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button.action-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .game-container {
+            position: relative;
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            padding: 1rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            max-width: 100%;
+            overflow: auto;
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .win-message {
+            margin-top: 1rem;
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid var(--accent);
+            padding: 1.25rem 2rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+            display: none;
+            width: 100%;
+        }
+
+        .win-message h2 {
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+            font-size: 1.25rem;
+        }
+
+        .win-message p {
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Jigsaw Puzzle</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="imageUpload" class="file-upload-btn">Upload Image</label>
+            <input type="file" id="imageUpload" accept="image/*">
+        </div>
+        
+        <div class="control-group">
+            <label for="difficulty">Grid:</label>
+            <select id="difficulty">
+                <option value="3">3 x 3 (Easy)</option>
+                <option value="4" selected>4 x 4 (Medium)</option>
+                <option value="5">5 x 5 (Hard)</option>
+                <option value="6">6 x 6 (Expert)</option>
+            </select>
+        </div>
+
+        <button class="action-btn" id="restartBtn">Restart</button>
+    </div>
+
+    <div class="game-container">
+        <canvas id="puzzleCanvas"></canvas>
+        <div class="win-message" id="winMessage">
+            <h2>Puzzle Solved!</h2>
+            <p>Great job putting the pieces together.</p>
+            <button class="action-btn" id="playAgainBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('puzzleCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageUpload = document.getElementById('imageUpload');
+        const difficultySelect = document.getElementById('difficulty');
+        const restartBtn = document.getElementById('restartBtn');
+        const winMessage = document.getElementById('winMessage');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+
+        let image = new Image();
+        let pieces = [];
+        let cols = 4;
+        let rows = 4;
+        let pieceWidth = 0;
+        let pieceHeight = 0;
+        let selectedPiece = null;
+        let isComplete = false;
+        let horizontalEdges = [];
+        let verticalEdges = [];
+
+        function loadDefaultImage() {
+            const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
+                <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#3b82f6"/>
+                        <stop offset="50%" stop-color="#8b5cf6"/>
+                        <stop offset="100%" stop-color="#ec4899"/>
+                    </linearGradient>
+                </defs>
+                <rect width="600" height="450" fill="url(#grad)"/>
+                <circle cx="300" cy="225" r="100" fill="rgba(255,255,255,0.15)"/>
+                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="bold" fill="#ffffff">Jigsaw Puzzle</text>
+            </svg>`;
+            const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            image.src = url;
+        }
+
+        image.onload = () => {
+            initGame();
+        };
+
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    image.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        difficultySelect.addEventListener('change', () => {
+            cols = parseInt(difficultySelect.value);
+            rows = parseInt(difficultySelect.value);
+            initGame();
+        });
+
+        restartBtn.addEventListener('click', initGame);
+        playAgainBtn.addEventListener('click', () => {
+            winMessage.style.display = 'none';
+            initGame();
+        });
+
+        function initGame() {
+            isComplete = false;
+            winMessage.style.display = 'none';
+
+            const maxWidth = Math.min(window.innerWidth - 60, 600);
+            const maxHeight = Math.min(window.innerHeight - 250, 450);
+            
+            let w = image.width;
+            let h = image.height;
+            let scale = Math.min(maxWidth / w, maxHeight / h);
+            
+            canvas.width = Math.floor(w * scale);
+            canvas.height = Math.floor(h * scale);
+
+            pieceWidth = canvas.width / cols;
+            pieceHeight = canvas.height / rows;
+
+            generateEdges();
+            createPieces();
+            shufflePieces();
+            draw();
+        }
+
+        function generateEdges() {
+            horizontalEdges = Array.from({ length: rows + 1 }, () => 
+                Array.from({ length: cols }, () => 0)
+            );
+            verticalEdges = Array.from({ length: rows }, () => 
+                Array.from({ length: cols + 1 }, () => 0)
+            );
+
+            for (let r = 1; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    horizontalEdges[r][c] = Math.random() < 0.5 ? 1 : -1;
+                }
+            }
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 1; c < cols; c++) {
+                    verticalEdges[r][c] = Math.random() < 0.5 ? 1 : -1;
+                }
+            }
+        }
+
+        function drawJigsawSide(context, x1, y1, x2, y2, tabDir) {
+            if (tabDir === 0) {
+                context.lineTo(x2, y2);
+                return;
+            }
+
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.hypot(dx, dy);
+            const angle = Math.atan2(dy, dx);
+
+            context.save();
+            context.translate(x1, y1);
+            context.rotate(angle);
+
+            const w = dist;
+            const tabDepth = tabDir * (w * 0.18);
+
+            context.lineTo(w * 0.35, 0);
+
+            context.bezierCurveTo(
+                w * 0.35, tabDepth * 0.2,
+                w * 0.32, tabDepth * 1.1,
+                w * 0.44, tabDepth * 1.1
+            );
+
+            context.bezierCurveTo(
+                w * 0.50, tabDepth * 1.25,
+                w * 0.50, tabDepth * 1.25,
+                w * 0.56, tabDepth * 1.1
+            );
+
+            context.bezierCurveTo(
+                w * 0.68, tabDepth * 1.1,
+                w * 0.65, tabDepth * 0.2,
+                w * 0.65, 0
+            );
+
+            context.lineTo(w, 0);
+            context.restore();
+        }
+
+        function buildPiecePath(context, r, c, offsetX = 0, offsetY = 0) {
+            const x1 = offsetX;
+            const y1 = offsetY;
+            const x2 = offsetX + pieceWidth;
+            const y2 = offsetY + pieceHeight;
+
+            const topTab = horizontalEdges[r][c];
+            const rightTab = verticalEdges[r][c + 1];
+            const bottomTab = -horizontalEdges[r + 1][c];
+            const leftTab = -verticalEdges[r][c];
+
+            context.beginPath();
+            context.moveTo(x1, y1);
+
+            drawJigsawSide(context, x1, y1, x2, y1, topTab);
+            drawJigsawSide(context, x2, y1, x2, y2, rightTab);
+            drawJigsawSide(context, x2, y2, x1, y2, bottomTab);
+            drawJigsawSide(context, x1, y2, x1, y1, leftTab);
+
+            context.closePath();
+        }
+
+        function createPieces() {
+            pieces = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    pieces.push({
+                        correctCol: c,
+                        correctRow: r,
+                        currentX: c * pieceWidth,
+                        currentY: r * pieceHeight,
+                        correctX: c * pieceWidth,
+                        correctY: r * pieceHeight
+                    });
+                }
+            }
+        }
+
+        function shufflePieces() {
+            let gridPositions = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    gridPositions.push({ x: c * pieceWidth, y: r * pieceHeight });
+                }
+            }
+            
+            for (let i = gridPositions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [gridPositions[i], gridPositions[j]] = [gridPositions[j], gridPositions[i]];
+            }
+
+            pieces.forEach((piece, index) => {
+                piece.currentX = gridPositions[index].x;
+                piece.currentY = gridPositions[index].y;
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 1;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    buildPiecePath(ctx, r, c, c * pieceWidth, r * pieceHeight);
+                    ctx.stroke();
+                }
+            }
+
+            const maxTabWidth = pieceWidth * 0.3;
+            const maxTabHeight = pieceHeight * 0.3;
+
+            pieces.forEach(piece => {
+                ctx.save();
+                
+                buildPiecePath(ctx, piece.correctRow, piece.correctCol, piece.currentX, piece.currentY);
+                ctx.clip();
+
+                const srcCol = piece.correctCol;
+                const srcRow = piece.correctRow;
+
+                const srcX = (srcCol * (image.width / cols)) - (maxTabWidth * (image.width / canvas.width));
+                const srcY = (srcRow * (image.height / rows)) - (maxTabHeight * (image.height / canvas.height));
+                const srcW = (image.width / cols) + (2 * maxTabWidth * (image.width / canvas.width));
+                const srcH = (image.height / rows) + (2 * maxTabHeight * (image.height / canvas.height));
+
+                const destX = piece.currentX - maxTabWidth;
+                const destY = piece.currentY - maxTabHeight;
+                const destW = pieceWidth + (2 * maxTabWidth);
+                const destH = pieceHeight + (2 * maxTabHeight);
+
+                ctx.drawImage(
+                    image,
+                    srcX, srcY, srcW, srcH,
+                    destX, destY, destW, destH
+                );
+                
+                ctx.restore();
+
+                ctx.save();
+                buildPiecePath(ctx, piece.correctRow, piece.correctCol, piece.currentX, piece.currentY);
+                ctx.strokeStyle = selectedPiece === piece ? '#38bdf8' : 'rgba(0, 0, 0, 0.4)';
+                ctx.lineWidth = selectedPiece === piece ? 3 : 1.5;
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        let startX, startY;
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (isComplete) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            for (let i = pieces.length - 1; i >= 0; i--) {
+                const p = pieces[i];
+                
+                buildPiecePath(ctx, p.correctRow, p.correctCol, p.currentX, p.currentY);
+                
+                if (ctx.isPointInPath(mouseX, mouseY)) {
+                    selectedPiece = p;
+                    startX = mouseX - p.currentX;
+                    startY = mouseY - p.currentY;
+                    
+                    pieces.splice(i, 1);
+                    pieces.push(selectedPiece);
+                    
+                    draw();
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!selectedPiece || isComplete) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            selectedPiece.currentX = mouseX - startX;
+            selectedPiece.currentY = mouseY - startY;
+            draw();
+        });
+
+        const dropPiece = () => {
+            if (!selectedPiece || isComplete) return;
+
+            let targetCol = Math.round(selectedPiece.currentX / pieceWidth);
+            let targetRow = Math.round(selectedPiece.currentY / pieceHeight);
+
+            targetCol = Math.max(0, Math.min(cols - 1, targetCol));
+            targetRow = Math.max(0, Math.min(rows - 1, targetRow));
+
+            let targetX = targetCol * pieceWidth;
+            let targetY = targetRow * pieceHeight;
+
+            let occupyingPiece = pieces.find(p => p !== selectedPiece && p.currentX === targetX && p.currentY === targetY);
+            
+            if (occupyingPiece) {
+                occupyingPiece.currentX = selectedPiece.currentX;
+                occupyingPiece.currentY = selectedPiece.currentY;
+            }
+
+            selectedPiece.currentX = targetX;
+            selectedPiece.currentY = targetY;
+
+            selectedPiece = null;
+            draw();
+            checkWin();
+        };
+
+        canvas.addEventListener('pointerup', dropPiece);
+        canvas.addEventListener('pointercancel', dropPiece);
+
+        function checkWin() {
+            let win = pieces.every(p => p.currentX === p.correctX && p.currentY === p.correctY);
+            if (win) {
+                isComplete = true;
+                winMessage.style.display = 'block';
+            }
+        }
+
+        loadDefaultImage();
+    </script>
+</body>
+</html>
