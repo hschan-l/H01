@@ -183,6 +183,7 @@
                 <option value="4" selected>4 x 4 (Medium)</option>
                 <option value="5">5 x 5 (Hard)</option>
                 <option value="6">6 x 6 (Expert)</option>
+                <option value="8">8 x 8 (Expert X)</option>
             </select>
         </div>
 
@@ -219,6 +220,7 @@
         let verticalEdges = [];
 
         function loadDefaultImage() {
+/*
             const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
                 <defs>
                     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -232,9 +234,9 @@
                 <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="bold" fill="#ffffff">Jigsaw Puzzle</text>
             </svg>`;
             const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
-            const url = // URL.createObjectURL(blob);
-'https://picsum.photos/400';
-            image.src = url;
+            const url = URL.createObjectURL(blob);
+*/
+            image.src = 'https://picsum.photos/400';
         }
 
         image.onload = () => {
@@ -419,7 +421,7 @@
                 }
             }
 
-            const maxTabWidth = pieceWidth * 0.3;
+            const maxTabWidth = pieceWidth * 0.5;
             const maxTabHeight = pieceHeight * 0.3;
 
             pieces.forEach(piece => {
