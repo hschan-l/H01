@@ -326,7 +326,9 @@
             context.rotate(angle);
 
             const w = dist;
-            const tabDepth = tabDir * (w * 0.18);
+            
+            const pieceSize = Math.sqrt(pieceWidth * pieceHeight);
+            const tabDepth = tabDir * (pieceSize * 0.18);
 
             context.lineTo(w * 0.35, 0);
 
